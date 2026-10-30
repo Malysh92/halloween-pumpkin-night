@@ -400,7 +400,7 @@ function plural(n, one, few, many){ const m10=n%10, m100=n%100;
 /* ---------- масштаб ---------- */
 let SCALE = 1, PORTRAIT = false;
 const WIN_W = MOBILE ? 74 : 52;                          // ширина окна в единицах мира (для зоны нажатия)
-const DOOR_Y = MOBILE ? 1555 : 868;                  // где стоит кнопка «Начать игру» (высота двери)
+const DOOR_Y = MOBILE ? 1485 : 868;                  // где стоит кнопка «Начать игру» (высота двери)
 function layout(){
   const vw = innerWidth, vh = innerHeight;
   PORTRAIT = vw / vh < 0.9;
