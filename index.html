@@ -381,6 +381,18 @@ const MOBILE = innerWidth / innerHeight < 0.9;      // телефон в вер�
 const W = 2000, H = 1125;                            // мир экрана 2 (и экрана 1 на компьютере)
 const W1 = MOBILE ? 1125 : 2000, H1 = MOBILE ? 2000 : 1125;   // мир экрана 1
 const W2 = MOBILE ? 1125 : 2000, H2 = MOBILE ? 2000 : 1125;   // мир экрана 2
+const ASSET_BASES = [];            /*ASSET_BASES*/
+function altUrl(url){            // тот же файл, но с соседнего хоста
+  for(let i = 0; i < ASSET_BASES.length; i++) if(url.indexOf(ASSET_BASES[i]) === 0) return ASSET_BASES[(i + 1) % ASSET_BASES.length] + url.slice(ASSET_BASES[i].length);
+  return null;
+}
+// любая картинка или аудио, которые не загрузились, пробуют соседний адрес
+addEventListener("error", e => {
+  const t = e.target; if(!t || (t.tagName !== "IMG" && t.tagName !== "AUDIO") || !ASSET_BASES.length) return;
+  const n = +(t.dataset.tries || 0); if(n >= ASSET_BASES.length * 2) return;
+  const u = altUrl(t.currentSrc || t.src); if(!u) return;
+  t.dataset.tries = n + 1; setTimeout(() => { t.src = u; if(t.tagName === "AUDIO") t.load(); }, 250 * n);
+}, true);
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = s => document.querySelector(s);
 const world = $("#world"), hud = $("#hud"), fx = $("#fx"), hint = $("#hint");
@@ -448,25 +460,27 @@ addEventListener("resize", () => {
 const CRITICAL = [MOBILE ? "bg1m.webp" : "bg1.webp","title.webp","btn.webp","wing.webp","pumpkin.webp","window_lit.webp","counter_full.webp","counter_empty.svg","spider.webp"].map(f => "assets/" + f);
 const SCREEN2_ASSETS = [MOBILE ? "bg2m.webp" : "bg2.webp","ticket_cover.webp","ticket_open.webp","title2.webp","cta.webp"].map(f => "assets/" + f);
 const keepAlive = [];
-function loadImg(src, tries = 3){
+function loadImg(src, tries = Math.max(3, ASSET_BASES.length * 2)){
   return new Promise(res => {
     let n = 0;
     (function go(){
       const i = new Image();
       i.onload = () => { (i.decode ? i.decode() : Promise.resolve()).catch(() => {}).then(() => res(i)); };
-      i.onerror = () => { if(++n < tries) setTimeout(go, 500 * n); else res(i); };   // не сдаёмся с первой ошибки сети
-      i.src = src + (n ? (src.includes("?") ? "&" : "?") + "r=" + n : "");
+      i.onerror = () => { if(++n < tries) setTimeout(go, 400 * n); else res(i); };   // не сдаёмся с первой ошибки сети
+      i.src = n && altUrl(src) ? (n % 2 ? altUrl(src) : src) : src + (n ? (src.includes("?") ? "&" : "?") + "r=" + n : "");
     })();
   });
 }
 // картинки, которые лежат прямо в разметке первого экрана: ждём, пока они реально загрузятся и расшифруются
-function domImgReady(img, tries = 3){
+function domImgReady(img){
   return new Promise(res => {
-    let n = 0; const orig = img.getAttribute("src");
+    let n = 0; const limit = Math.max(3, ASSET_BASES.length * 2);
     const done = () => { (img.decode ? img.decode() : Promise.resolve()).catch(() => {}).then(res); };
-    const fail = () => { if(++n < tries){ setTimeout(() => { img.src = orig + (orig.includes("?") ? "&" : "?") + "r=" + n; }, 500 * n); } else res(); };
-    img.addEventListener("load", done); img.addEventListener("error", fail);
-    if(img.complete && img.naturalWidth) done(); else if(img.complete) fail();
+    img.addEventListener("load", done);
+    img.addEventListener("error", () => {   // новый адрес подставит общий обработчик выше; тут считаем попытки
+      if(++n >= limit) res(); else if(!ASSET_BASES.length){ setTimeout(() => { img.src = img.getAttribute("src") + "?r=" + n; }, 400 * n); }
+    });
+    if(img.complete && img.naturalWidth) done();
   });
 }
 (async function preload(){
