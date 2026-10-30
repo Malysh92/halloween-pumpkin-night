@@ -1,0 +1,875 @@
+<!-- Тыквенная ночь PRO.FINANSY — вставить в Tilda: блок T123 «HTML» (на странице без шапки/подвала) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --text:#b3b2cb;          /* цвет подзаголовка и подсказки */
+  --logo:#cfd2dc;          /* логотип: слегка сероватый */
+  --pumpkin:#ff8a1f;
+  --gold:#e8c27a;
+  --night:#05080d;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; height:100%; background:var(--night); overflow:hidden; }
+body{ font-family:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--text);
+  -webkit-font-smoothing:antialiased; touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; }
+img{ display:block; -webkit-user-drag:none; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+#cam{ position:absolute; inset:0; will-change:transform; transform-origin:50% 50%; }
+/* ---------- Мир (картинка + окна), размер 2000×1125, масштабируется скриптом ---------- */
+#world{ position:absolute; left:0; top:0; width:2000px; height:1125px; transform-origin:0 0; }
+#world .bg{ position:absolute; inset:0; width:100%; height:100%; }
+#world .vig{ position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 55%, transparent 55%, rgba(2,4,8,.55) 100%); }
+#dim{ position:absolute; inset:0; pointer-events:none; transition:opacity 1.4s ease;
+  background:radial-gradient(60% 55% at 50% 72%, rgba(0,0,0,.15), rgba(0,0,0,.5) 100%); }
+body.playing #dim{ opacity:0; }
+
+.win{ position:absolute; }
+.win .glass{ position:absolute; inset:0; overflow:hidden; pointer-events:none;
+  clip-path:polygon(0 100%,0 32%,6% 21%,22% 8%,50% 0,78% 8%,94% 21%,100% 32%,100% 100%); }
+.win .lit{ position:absolute; inset:0; width:100%; height:100%; opacity:0; transition:opacity .3s ease; }
+.win.on .lit{ opacity:1; animation:flick 3.4s infinite; animation-delay:var(--d,0s); }
+@keyframes flick{ 0%,100%{filter:brightness(1)} 8%{filter:brightness(.82)} 12%{filter:brightness(1.08)} 40%{filter:brightness(.94)} 70%{filter:brightness(1.05)} }
+.win .pk{ position:absolute; left:3%; width:94%; bottom:-2%; transform:translateY(112%);
+  transition:transform .22s cubic-bezier(.3,1.5,.5,1); filter:drop-shadow(0 0 10px rgba(255,150,40,.7)); }
+.win.has .pk{ transform:translateY(0); }
+.win .spill{ position:absolute; left:-80%; right:-80%; top:-25%; bottom:-35%; pointer-events:none; opacity:0;
+  transition:opacity .35s ease; mix-blend-mode:screen;
+  background:radial-gradient(closest-side, rgba(255,150,40,.5), rgba(255,110,20,.16) 58%, transparent 100%); }
+.win.on .spill{ opacity:1; }
+.win.miss .glass{ animation:miss .32s; }
+@keyframes miss{ 25%{transform:translateX(-3px);filter:brightness(.6)} 75%{transform:translateX(3px)} }
+.win .hit{ position:absolute; inset:calc(var(--pad,0px) * -1); border:0; padding:0; background:transparent; cursor:pointer; border-radius:12px;
+  outline-offset:2px; }
+.win .hit:focus-visible{ outline:3px solid var(--pumpkin); }
+body:not(.playing) .win .hit{ pointer-events:none; }
+
+.eyes{ position:absolute; width:0; height:0; opacity:0; pointer-events:none; mix-blend-mode:screen; }
+.eyes i{ position:absolute; top:-7px; width:26px; height:13px; border-radius:50%; transform-origin:50% 50%;
+  background:radial-gradient(ellipse at 50% 50%, #fffbe0 0 14%, #ffc23a 34%, #ff7a12 60%, rgba(255,90,10,0) 78%);
+  box-shadow:0 0 16px 6px rgba(255,130,20,.55); }
+.eyes i::after{ content:""; position:absolute; left:50%; top:12%; width:3px; height:76%; margin-left:-1.5px; border-radius:2px; background:#2a0a00; opacity:.85; }
+.eyes i:first-child{ left:-34px; } .eyes i:last-child{ left:8px; }
+.fogb{ position:absolute; border-radius:50%; filter:blur(26px); pointer-events:none;
+  background:radial-gradient(closest-side, rgba(165,188,205,.22), rgba(150,175,195,.08) 60%, transparent 100%); }
+.lamp{ position:absolute; width:260px; height:260px; margin:-130px 0 0 -130px; pointer-events:none; mix-blend-mode:screen; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,165,55,.42), rgba(255,130,30,.12) 60%, transparent 100%); animation:lamp 2.8s infinite; }
+@keyframes lamp{ 0%,100%{opacity:1} 10%{opacity:.7} 18%{opacity:1} 47%{opacity:.82} 62%{opacity:1} 80%{opacity:.75} }
+.ember{ position:absolute; width:4px; height:4px; border-radius:50%; background:#ffb54a; box-shadow:0 0 8px 2px rgba(255,130,30,.8); pointer-events:none; opacity:0; }
+
+/* ---------- HUD: логотип, заголовок, счётчик, подсказка ---------- */
+#hud{ position:absolute; left:0; top:0; width:2000px; height:1125px; transform-origin:0 0; pointer-events:none; }
+#hud .logo{ position:absolute; left:905px; top:46px; width:182px; color:var(--logo); }
+#hud .logo svg{ display:block; width:100%; height:auto; }
+#hud .title{ position:absolute; left:650px; top:73px; width:686px; margin:0; }
+#hud .title img{ width:100%; height:auto; filter:drop-shadow(0 6px 22px rgba(255,110,20,.25)); }
+#hud .lead{ position:absolute; left:0; right:0; top:228px; margin:0; text-align:center; font-weight:500; font-size:22px; line-height:29px; color:var(--text); text-shadow:0 2px 14px rgba(0,0,0,.7); }
+#hud .lead b{ color:#fff; font-weight:800; }
+#hud .counter{ position:absolute; left:0; right:0; top:305px; display:flex; justify-content:center; gap:0; }
+#hud .counter::before{ content:""; position:absolute; left:50%; top:-14px; width:560px; height:88px; margin-left:-280px; border-radius:44px;
+  background:rgba(4,7,12,.42); filter:blur(16px); pointer-events:none; }
+#hud .hint{ position:absolute; left:0; right:0; top:1020px; margin:0; text-align:center; font-weight:500; font-size:21px; color:var(--text);
+  text-shadow:0 2px 12px rgba(0,0,0,.85); opacity:0; transition:opacity .8s ease; }
+body.playing #hud .hint{ opacity:1; }
+
+.slot{ position:relative; width:86px; height:60px; }
+.slot img{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+.slot .empty{ width:62px; opacity:.85; }
+.slot .full{ width:86px; opacity:0; transform:translate(-50%,-50%) scale(.6); transition:opacity .25s, transform .4s cubic-bezier(.3,1.8,.5,1); }
+.slot.on .full{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+.slot.on .empty{ opacity:0; }
+
+/* кнопка старта: картинка-плита с крыльями */
+.start{ --bw:560px; position:absolute; left:1000px; top:868px; width:var(--bw); transform:translate(-50%,-50%);
+  pointer-events:auto; cursor:pointer; border:0; padding:0; background:none;
+  filter:drop-shadow(0 0 22px rgba(255,120,20,.55)) drop-shadow(0 14px 22px rgba(0,0,0,.75));
+  transition:transform .25s cubic-bezier(.3,1.6,.5,1), filter .25s, opacity .8s; animation:pulse 2.6s ease-in-out infinite; }
+.start .plate,.cta .plate{ display:block; width:100%; height:auto; position:relative; z-index:1; }
+.start .wing-w,.cta .wing-w{ position:absolute; width:31%; left:-20.5%; top:27%; pointer-events:none; }
+.start .wing-w.wr,.cta .wing-w.wr{ left:auto; right:-20.5%; transform:scaleX(-1); }
+.start .wing-w img,.cta .wing-w img{ display:block; width:100%; height:auto; transform-origin:95% 9%; transform:rotate(24deg); animation:wing 2.6s ease-in-out infinite; }
+@keyframes wing{ 0%,100%{ transform:rotate(24deg); } 50%{ transform:rotate(12deg); } }
+.start .em,.cta .em{ position:absolute; bottom:30%; width:5px; height:5px; border-radius:50%; background:#ffb347; box-shadow:0 0 8px 2px rgba(255,130,30,.9); opacity:0; animation:ember 3.2s linear infinite; }
+@keyframes ember{ 0%{ transform:translateY(0) scale(1); opacity:0; } 15%{ opacity:1; } 100%{ transform:translateY(-70px) translateX(var(--dx,0)) scale(.3); opacity:0; } }
+.start:hover{ transform:translate(-50%,-50%) scale(1.06); filter:drop-shadow(0 0 34px rgba(255,140,30,.85)) drop-shadow(0 14px 22px rgba(0,0,0,.75)) brightness(1.1); }
+.start:active{ transform:translate(-50%,-50%) scale(.97); }
+.start:focus-visible{ outline:3px solid #fff; outline-offset:8px; border-radius:20px; }
+@keyframes pulse{ 50%{ filter:drop-shadow(0 0 40px rgba(255,130,30,.85)) drop-shadow(0 14px 22px rgba(0,0,0,.75)); } }
+body.playing .start{ opacity:0; pointer-events:none; animation:none; }
+
+/* ---------- появление элементов после захода ---------- */
+#cam{ animation:sceneIn 1.8s ease-out backwards; }
+@keyframes sceneIn{ from{ opacity:0; } }
+#hud .logo{ animation:inLogo 1s cubic-bezier(.2,.7,.2,1) .25s backwards; }
+@keyframes inLogo{ from{ opacity:0; transform:translateY(-22px); filter:blur(6px); } }
+#hud .title{ animation:inTitle 1.3s cubic-bezier(.2,.8,.2,1) .7s backwards; }
+@keyframes inTitle{ 0%{ opacity:0; transform:translateY(46px) scale(.9); filter:blur(14px) brightness(2.2); }
+  55%{ opacity:1; filter:blur(0) brightness(1.5); } 100%{ transform:none; filter:none; } }
+#hud .title img{ animation:tremble 1.3s steps(1,end) infinite, titleGlow 3.4s ease-in-out infinite; }
+body.playing #hud .title img{ animation:none; filter:drop-shadow(0 6px 22px rgba(255,110,20,.25)); transition:filter .8s; }
+@keyframes tremble{
+  0%{ transform:translate(0,0) rotate(0) } 8%{ transform:translate(1px,-1px) rotate(.12deg) } 17%{ transform:translate(-1px,.6px) rotate(-.1deg) }
+  26%{ transform:translate(.6px,1px) rotate(.06deg) } 35%{ transform:translate(-.8px,-.6px) rotate(-.14deg) } 44%{ transform:translate(1.2px,.4px) rotate(.1deg) }
+  53%{ transform:translate(0,-1px) rotate(0) } 62%{ transform:translate(-1.2px,.8px) rotate(-.08deg) } 71%{ transform:translate(.8px,-.4px) rotate(.12deg) }
+  80%{ transform:translate(-.4px,1px) rotate(-.06deg) } 90%{ transform:translate(.6px,.2px) rotate(.08deg) } }
+@keyframes titleGlow{ 0%,100%{ filter:drop-shadow(0 6px 22px rgba(255,110,20,.25)) brightness(1); } 50%{ filter:drop-shadow(0 6px 30px rgba(255,120,20,.5)) brightness(1.1); } }
+#hud .lead{ animation:inUp 1.1s ease-out 1.55s backwards; }
+@keyframes inUp{ from{ opacity:0; transform:translateY(18px); filter:blur(5px); } }
+#hud .slot{ animation:inPop .6s cubic-bezier(.3,1.7,.5,1) calc(1.95s + var(--i,0) * .12s) backwards; }
+@keyframes inPop{ from{ opacity:0; transform:scale(.3) translateY(12px); } }
+.start{ animation:inBtn 1s cubic-bezier(.3,1.5,.5,1) 2.5s backwards, pulse 2.6s ease-in-out 3.5s infinite; }
+@keyframes inBtn{ from{ opacity:0; transform:translate(-50%,-20%) scale(.6); filter:blur(8px) drop-shadow(0 0 60px rgba(255,140,30,1)); } }
+.start .wing-w img{ animation:wingOpen .9s ease-out 2.7s backwards, wing 2.6s ease-in-out 3.6s infinite; }
+@keyframes wingOpen{ from{ transform:rotate(70deg) scale(.3); opacity:0; } to{ transform:rotate(24deg) scale(1); opacity:1; } }
+
+/* ---------- Эффекты поверх всего (экранные координаты) ---------- */
+#fx{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:20; }
+.fly{ position:fixed; left:0; top:0; will-change:transform; filter:drop-shadow(0 0 14px rgba(255,150,40,.9)); }
+.spark{ position:fixed; left:0; top:0; width:7px; height:7px; border-radius:50%; background:#ffc15a; box-shadow:0 0 10px 3px rgba(255,140,30,.9); }
+.sp{ position:absolute; top:0; transform-origin:50% 0; }
+.sp .drop{ position:relative; will-change:transform; }
+.sp .thread{ position:absolute; left:50%; bottom:calc(100% - 6px); width:2px; height:130vh; margin-left:-1px;
+  background:linear-gradient(90deg,#050608,#1a1c22); opacity:.95; }
+.sp img{ width:100%; height:auto; filter:drop-shadow(0 8px 10px rgba(0,0,0,.65)); }
+
+#smoke{ position:fixed; left:0; top:0; width:100%; height:100%; z-index:30; pointer-events:none; opacity:0; }
+#bats{ position:fixed; inset:0; z-index:29; pointer-events:none; overflow:hidden; }
+.bat{ position:absolute; left:0; top:0; will-change:transform; }
+.bat svg{ display:block; width:100%; height:auto; fill:#04060a; overflow:visible; }
+.bat .w{ transform-origin:60px 34px; animation:flap .2s ease-in-out infinite alternate; }
+@keyframes flap{ from{ transform:rotate(-24deg) scaleY(1.05); } to{ transform:rotate(16deg) scaleY(.75); } }
+
+/* ---------- Экран 2 ---------- */
+#s2{ position:fixed; inset:0; z-index:15; background:#05080d; opacity:0; visibility:hidden; overflow:hidden; transition:opacity .6s ease; }
+#s2.show{ opacity:1; visibility:visible; }
+#cam2{ position:absolute; inset:0; will-change:transform; transform-origin:50% 50%; }
+#world2{ position:absolute; left:0; top:0; width:2000px; height:1125px; transform-origin:0 0; }
+#world2 .bg{ position:absolute; inset:0; width:100%; height:100%; }
+#world2 .shade{ position:absolute; left:210px; top:-30px; width:1580px; height:820px; border-radius:50%; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(3,6,10,.72), rgba(3,6,10,.5) 55%, rgba(3,6,10,0) 100%); filter:blur(34px); }
+#world2 .vig{ position:absolute; inset:0; pointer-events:none; background:radial-gradient(120% 90% at 50% 55%, transparent 55%, rgba(2,4,8,.5) 100%); }
+#hud2{ position:absolute; left:0; top:0; width:2000px; height:1125px; transform-origin:0 0; pointer-events:none; }
+#hud2 .logo2{ position:absolute; left:905px; top:46px; width:182px; color:var(--logo); }
+#hud2 .logo2 svg{ display:block; width:100%; height:auto; }
+#hud2 .title2{ position:absolute; left:640px; top:67px; width:720px; margin:0; }
+#hud2 .title2 img{ width:100%; height:auto; filter:drop-shadow(0 6px 22px rgba(255,110,20,.3)); }
+#hud2 .lead2{ position:absolute; left:0; right:0; top:252px; margin:0; text-align:center; font-weight:500; font-size:22px; line-height:29px; color:var(--text); text-shadow:0 2px 14px rgba(0,0,0,.75); }
+#hud2 .cta-text{ position:absolute; left:0; right:0; top:704px; margin:0 auto; width:640px; text-align:center; font-weight:500; font-size:22px; line-height:29px; color:var(--text); text-shadow:0 2px 14px rgba(0,0,0,.8); opacity:0; visibility:hidden; }
+#s2.show .title2{ animation:inTitle 1.3s cubic-bezier(.22,.7,.2,1) .25s backwards; }
+#s2.show .logo2{ animation:inLogo 1.1s cubic-bezier(.22,.7,.2,1) .1s backwards; }
+#s2.show .lead2{ animation:inUp 1.2s ease-out .6s backwards; }
+#s2.open .cta-text{ visibility:visible; opacity:1; animation:inUp .9s ease-out .35s backwards; }
+
+/* билет */
+#ticket{ position:absolute; left:575px; top:300px; width:850px; aspect-ratio:1700/745; perspective:1500px; pointer-events:none; }
+#ticket .tk-card{ position:absolute; inset:0; container-type:inline-size; transform-style:preserve-3d; opacity:0; will-change:transform; }
+#ticket .tk-open{ position:absolute; inset:0; width:100%; height:100%; }
+#ticket .tk-shadow{ position:absolute; left:6%; right:6%; bottom:-7%; height:16%; border-radius:50%; background:radial-gradient(closest-side, rgba(0,0,0,.65), transparent); filter:blur(10px); opacity:0; }
+#scratch{ position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:grab; pointer-events:none; }
+#ticket.ready #scratch{ pointer-events:auto; }
+#scratch:active{ cursor:grabbing; }
+#ticket .sheen{ position:absolute; inset:3% 5%; pointer-events:none; border-radius:10px; mix-blend-mode:soft-light;
+  background:linear-gradient(105deg, transparent 38%, rgba(255,240,200,.85) 50%, transparent 62%) 0 0/260% 100% no-repeat; animation:sheen 3.8s ease-in-out infinite; }
+@keyframes sheen{ from{ background-position:130% 0; } to{ background-position:-30% 0; } }
+#ticket.done .sheen{ display:none; }
+#ticket .rays{ position:absolute; left:50%; top:50%; width:1700px; height:1700px; margin:-850px 0 0 -850px; pointer-events:none; opacity:0; mix-blend-mode:screen;
+  background:repeating-conic-gradient(from 0deg, rgba(255,190,90,.6) 0 3deg, transparent 3deg 10deg);
+  -webkit-mask-image:radial-gradient(closest-side, #000, transparent 72%); mask-image:radial-gradient(closest-side, #000, transparent 72%); }
+.gift{ position:absolute; left:15%; right:15%; top:17%; bottom:17%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#2a1507; }
+#ticket.open .gift > *{ animation:giftIn .9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay:calc(var(--k) * .12s + .1s); }
+@keyframes giftIn{ from{ transform:scale(.94); filter:brightness(1.9) blur(1px); } }
+.gift .g-l{ --k:0; font:800 1.75cqw/1 "Manrope",sans-serif; letter-spacing:.24em; text-transform:uppercase; color:#8a4f1c; }
+.gift .g-h{ --k:1; margin:1.7cqw 0 0; font:700 3.75cqw/1.12 "Cormorant Garamond",Georgia,serif; text-wrap:balance; }
+.gift .g-d{ --k:2; position:relative; width:56%; height:1px; margin:2.2cqw 0; background:linear-gradient(90deg, transparent, #8a4f1c, transparent); }
+.gift .g-d::after{ content:""; position:absolute; left:50%; top:50%; width:1.1cqw; height:1.1cqw; margin:-.55cqw 0 0 -.55cqw; transform:rotate(45deg); background:#a63d08; }
+.gift .g-t{ --k:3; display:flex; align-items:center; gap:1.4cqw; }
+.gift .g-p{ font:700 6cqw/1 "Cormorant Garamond",serif; color:#a63d08; }
+.gift .g-n{ font:700 9cqw/1 "Cormorant Garamond",serif; color:#a63d08; text-shadow:0 .2cqw 0 rgba(255,220,160,.6); }
+.gift .g-tl{ font:800 2.7cqw/1.18 "Manrope",sans-serif; text-align:left; }
+
+.arrows{ position:absolute; left:1000px; top:706px; width:150px; margin-left:-75px; display:flex; flex-direction:column-reverse; gap:2px;
+  opacity:0; visibility:hidden; transition:opacity .5s ease, transform .5s ease, visibility 0s .5s; }
+#ticket.ready + .arrows{ opacity:1; visibility:visible; transition:opacity .8s ease; }
+#ticket.done + .arrows{ opacity:0; visibility:hidden; transform:translateY(-24px) scale(.8); }
+.arrows svg{ display:block; width:100%; height:auto; overflow:visible; filter:drop-shadow(0 0 10px rgba(255,140,30,.95)) drop-shadow(0 0 24px rgba(255,110,20,.6)); animation:arrowFlow 1.5s ease-in-out infinite; }
+.arrows svg:nth-child(2){ animation-delay:.22s; } .arrows svg:nth-child(3){ animation-delay:.44s; }
+.arrows path{ fill:none; stroke:url(#arrowGold); stroke-width:11; stroke-linecap:round; stroke-linejoin:round; }
+@keyframes arrowFlow{ 0%{ opacity:.12; transform:translateY(10px); } 45%{ opacity:1; transform:translateY(0); } 100%{ opacity:.12; transform:translateY(-10px); } }
+
+/* кнопка «Забрать подарок» */
+.cta{ --bw:560px; position:absolute; left:1000px; top:872px; width:var(--bw); transform:translate(-50%,-50%); display:block; text-decoration:none;
+  pointer-events:none; opacity:0; visibility:hidden; cursor:pointer;
+  filter:drop-shadow(0 0 22px rgba(255,120,20,.55)) drop-shadow(0 14px 22px rgba(0,0,0,.75));
+  transition:transform .25s cubic-bezier(.3,1.6,.5,1), filter .25s; }
+#s2.open .cta{ visibility:visible; opacity:1; pointer-events:auto; animation:inBtn 1s cubic-bezier(.3,1.5,.5,1) .7s backwards, pulse 2.6s ease-in-out 1.8s infinite; }
+.cta:hover{ transform:translate(-50%,-50%) scale(1.06); filter:drop-shadow(0 0 34px rgba(255,140,30,.85)) drop-shadow(0 14px 22px rgba(0,0,0,.75)) brightness(1.1); }
+.cta:active{ transform:translate(-50%,-50%) scale(.97); }
+.cta:focus-visible{ outline:3px solid #fff; outline-offset:8px; border-radius:20px; }
+#s2.open .cta .wing-w img{ animation:wingOpen .9s ease-out .9s backwards, wing 2.6s ease-in-out 1.8s infinite; }
+
+/* лепестки фольги при стирании */
+.flake{ position:fixed; left:0; top:0; width:6px; height:3px; border-radius:1px; pointer-events:none; background:linear-gradient(90deg,#ffd27a,#d9701a); box-shadow:0 0 6px rgba(255,150,40,.8); }
+
+/* вертикальный экран */
+body.portrait #world2{ -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16%); mask-image:linear-gradient(to bottom,transparent 0,#000 16%); }
+body.portrait #hud2{ width:100vw; height:100vh; display:flex; flex-direction:column; align-items:center; padding-top:max(16px, env(safe-area-inset-top)); transform:none !important; }
+body.portrait #hud2 .logo2{ position:static; width:min(46vw,210px); }
+body.portrait #hud2 .title2{ position:static; width:min(90vw,500px); margin-top:1.5vh; }
+body.portrait #hud2 .lead2{ position:static; font-size:clamp(15px,4.3vw,21px); line-height:1.38; padding:0 7vw; margin-top:.5vh; }
+body.portrait #ticket{ position:relative; left:auto; top:auto; width:min(94vw,560px); margin-top:2.2vh; }
+body.portrait .arrows{ position:relative; left:auto; top:auto; margin:1.6vh 0 0; width:min(26vw,120px); }
+body.portrait #hud2 .cta-text{ position:static; width:auto; padding:0 7vw; margin-top:2.4vh; font-size:clamp(14px,4vw,19px); line-height:1.4; }
+body.portrait .cta{ --bw:min(56vw,300px); position:relative; left:auto; top:auto; transform:none; margin-top:3vh; }
+body.portrait .cta:hover{ transform:scale(1.04); }
+body.portrait .cta:active{ transform:scale(.97); }
+
+/* кнопка звука (не запускает музыку — только выключает) */
+#snd{ position:fixed; right:18px; top:18px; z-index:40; width:44px; height:44px; border-radius:50%; border:1px solid rgba(207,210,220,.35);
+  background:rgba(5,8,13,.55); color:var(--logo); display:grid; place-items:center; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .8s; }
+body.playing #snd{ opacity:.85; pointer-events:auto; }
+#snd:hover{ opacity:1; }
+#snd svg{ width:22px; height:22px; }
+#snd .off{ display:none; } #snd.muted .on{ display:none; } #snd.muted .off{ display:block; }
+
+/* ---------- Вертикальный экран (временный вариант, потом сделаем отдельные картинки) ---------- */
+body.portrait #world{ -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16%); mask-image:linear-gradient(to bottom,transparent 0,#000 16%); }
+body.portrait #hud{ width:100vw; height:100vh; display:flex; flex-direction:column; align-items:center; padding-top:max(16px, env(safe-area-inset-top)); transform:none !important; }
+body.portrait #hud .logo{ position:static; width:min(46vw,210px); }
+body.portrait #hud .title{ position:static; width:min(96vw,540px); margin-top:1.5vh; }
+body.portrait #hud .lead{ position:static; font-size:clamp(15px,4.3vw,21px); line-height:1.38; padding:0 7vw; margin-top:-1.5vh; }
+body.portrait #hud .counter{ position:static; margin-top:1.6vh; gap:2px; }
+body.portrait #hud .counter::before{ display:none; }
+body.portrait .slot{ width:min(17vw,78px); height:min(16vw,74px); }
+body.portrait .slot .empty{ width:70%; } body.portrait .slot .full{ width:108%; }
+body.portrait #hud .hint{ position:absolute; top:auto; bottom:max(18px, env(safe-area-inset-bottom)); font-size:15px; padding:0 6vw; }
+body.portrait .start{ --bw:min(56vw,300px); left:50%; }
+@media (prefers-reduced-motion: reduce){ .sp,.bat{ display:none; } *{ animation-duration:.01ms !important; } }
+/* ---------- прелоадер ---------- */
+#pre{ position:fixed; inset:0; z-index:100; background:#05080d; display:grid; place-items:center; transition:opacity .7s ease, visibility 0s .7s; animation:preFail 0s linear 14s forwards; }
+#pre.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+@keyframes preFail{ to{ opacity:0; visibility:hidden; pointer-events:none; } }
+#pre .pre-in{ display:flex; flex-direction:column; align-items:center; gap:22px; }
+#pre .pre-logo{ width:min(46vw,200px); color:var(--logo); opacity:.9; }
+#pre .pre-logo svg{ display:block; width:100%; height:auto; }
+#pre .pre-pk{ width:84px; height:auto; animation:prePulse 1.6s ease-in-out infinite; }
+@keyframes prePulse{ 0%,100%{ transform:scale(.92); filter:drop-shadow(0 0 10px rgba(255,120,20,.5)); } 50%{ transform:scale(1.05); filter:drop-shadow(0 0 26px rgba(255,140,30,.95)); } }
+#pre .pre-bar{ width:min(52vw,220px); height:3px; border-radius:2px; background:rgba(255,255,255,.12); overflow:hidden; }
+#pre .pre-bar i{ display:block; height:100%; transform-origin:0 50%; transform:scaleX(.04); transition:transform .35s ease-out; background:linear-gradient(90deg,#c9520a,#ffb347); box-shadow:0 0 10px rgba(255,140,30,.9); }
+/* пока всё грузится, анимации страницы стоят — они стартуют, когда прелоадер уходит */
+body:not(.ready) :not(#pre):not(#pre *){ animation-play-state:paused !important; }
+</style>
+
+<div id="pre" aria-hidden="true"><div class="pre-in"><div class="pre-logo" id="preLogo"></div><img class="pre-pk" src="https://malysh92.github.io/halloween-pumpkin-night/assets/counter_full.webp" alt=""><div class="pre-bar"><i id="preBar"></i></div></div></div>
+<h1 class="sr">Тыквы сбежали</h1>
+
+<div id="cam"><div id="world">
+  <img class="bg" src="https://malysh92.github.io/halloween-pumpkin-night/assets/bg1.webp" alt="" draggable="false">
+  <div id="amb"></div>
+  <div id="wins"></div>
+  <div class="vig"></div>
+  <div id="dim"></div>
+</div></div>
+
+<div id="hud">
+  <div class="logo" role="img" aria-label="PRO.FINANSY"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 988 109" fill="none" aria-hidden="true"><path d="M25.9369 106.043V79.5719H43.7956C67.3234 79.5719 79.3708 60.8512 79.3708 42.1308C79.7958 22.8256 67.6069 3.66645 43.7956 3.66645C29.0553 3.52015 14.7405 3.66645 0 3.66645V106.043H25.9369ZM25.5122 56.3172V26.9207H43.7956C50.8823 26.9207 54.5673 34.0869 54.5673 41.3997C54.5673 48.8584 50.5987 56.3172 43.7956 56.3172H25.5122ZM157.92 69.7719C167.699 62.8988 172.519 51.6372 172.661 39.937C172.661 21.9481 160.896 3.66645 136.943 3.66645C122.345 3.52015 108.03 3.66645 93.2898 3.66645V106.043H119.227V74.0139H132.833L149.841 106.043H177.337V102.241L157.92 69.7719ZM118.802 52.222V26.9207H136.801C144.172 26.9207 147.573 32.9171 147.573 39.3521C147.573 45.787 144.03 52.222 136.801 52.222H118.802ZM419.076 49.7359H387.326V27.0671H423.327V3.81266H361.389V106.189H387.326V73.1359H419.076V49.7359ZM473.488 84.5439V25.458H484.967V3.81266H436.072V25.458H447.551V84.5439H434.933V106.189H486.098V84.5439H473.488ZM581.636 106.482H589.284V3.81266H563.347V53.831L511.616 3.37395H503.537V106.189H529.474V53.3921L581.636 106.482ZM668.075 93.4649L673.888 106.189H700.67V102.533L655.599 2.78896H643.696L598.197 102.533V106.189H625.272L630.943 93.4649H668.075ZM649.505 46.3723L659.853 71.0889H639.303L649.505 46.3723ZM787.868 106.482H795.516V3.81266H769.583V53.831L717.848 3.37395H709.77V106.189H735.706V53.3921L787.868 106.482ZM811.804 74.7449C811.381 97.7069 831.505 108.53 852.479 108.53C872.745 108.53 893.015 97.2679 893.015 75.7689C893.015 50.906 874.592 45.7871 853.475 43.8858C843.977 42.862 838.306 41.2534 838.306 34.3795C838.306 26.6281 845.962 25.0195 851.771 25.0195C858.715 25.0195 865.097 27.9445 865.24 34.9643H889.472C889.895 12.734 870.483 1.47266 851.348 1.47266C831.082 1.47266 812.793 12.734 812.793 34.9643C812.793 56.3172 830.939 63.7763 849.078 64.9464C856.311 65.3849 867.359 65.8239 867.359 75.6219C867.359 81.7649 859.569 85.2749 852.198 85.2749C844.258 85.2749 836.468 81.7649 836.468 74.7449H811.804ZM940.618 37.7435L922.614 3.81266H894.834V7.76136L928.142 65.6772V106.189H954.079V65.6772L987.247 7.76136V3.81266H959.749L941.749 37.7435H940.618Z" fill="currentColor"></path><path d="M216.18 96.3087L219.105 91.1567L217.245 90.0317L212.104 99.0877L212.691 99.4427L220.522 97.2557L217.619 102.37L219.491 103.502L224.625 94.4577L224.063 94.1187L216.18 96.3087Z" fill="currentColor"></path><path d="M209.06 81.9309L201.77 89.1859L203.276 90.7979L206.057 88.0309L208.748 90.9099L205.968 93.6779L207.464 95.2789L214.755 88.0249L213.258 86.4229L210.175 89.4909L207.483 86.6109L210.567 83.5429L209.06 81.9309Z" fill="currentColor"></path><path d="M197.17 75.9559C195.516 76.9129 195.209 78.6669 196.116 80.3329L198.219 84.1999L207.038 79.0919L204.737 74.8599C203.745 73.0379 202.105 72.5839 200.553 73.4819C199.644 74.0089 199.173 74.8809 199.293 75.9249C198.641 75.5489 197.813 75.5829 197.17 75.9559ZM197.809 79.5409C197.44 78.8639 197.623 78.1929 198.274 77.8329C198.874 77.5029 199.453 77.7149 199.815 78.3789L200.785 80.1629L198.779 81.3239L197.809 79.5409ZM201.198 77.2009C201.035 76.9009 200.919 76.6259 200.95 76.3179C200.99 75.9349 201.241 75.6009 201.601 75.4089C202.215 75.1049 202.806 75.2769 203.167 75.9399L204.343 78.1019L202.324 79.2709L201.198 77.2009Z" fill="currentColor"></path><path d="M190.9 66.2964L192.614 72.4519L202.348 69.5659L200.602 63.2954L198.711 63.8562L199.854 67.9599L197.628 68.6199L196.589 64.8891L194.768 65.4292L195.807 69.1599L193.832 69.7449L192.721 65.7562L190.9 66.2964Z" fill="currentColor"></path><path d="M194.948 60.9983C198.303 60.9046 200.029 58.2579 199.957 55.5116C199.9 53.3327 198.728 51.14 196.041 50.7671L196.097 52.9163C197.335 53.2402 197.957 54.2833 197.99 55.5816C198.039 57.4468 196.625 58.6964 194.889 58.7447C192.965 58.7981 191.631 57.5959 191.583 55.7453C191.55 54.4917 192.032 53.5372 193.162 53.0429L193.105 50.879C190.616 51.4263 189.575 53.6953 189.63 55.7995C189.659 58.547 191.579 61.0924 194.948 60.9983Z" fill="currentColor"></path><path d="M192.601 43.9476L200.651 45.7962L201.106 43.6834L193.057 41.8344L193.641 39.1236L191.805 38.7021L190.177 46.251L192.013 46.6725L192.601 43.9476Z" fill="currentColor"></path><path d="M199.98 30.3561L205.167 33.006L206.123 31.0122L197.008 26.3555L196.706 26.9846L199.37 34.8922L194.222 32.2625L193.259 34.2698L202.362 38.9197L202.651 38.3175L199.98 30.3561Z" fill="currentColor"></path><path d="M212.723 22.763L213.693 23.6603L214.977 22.1818L212.64 20.0191L211.828 20.9527L205.655 15.2422L204.197 16.9209L210.273 22.5416L207.838 25.3429L201.763 19.7221L200.314 21.3897L207.855 28.366L212.723 22.763Z" fill="currentColor"></path><path d="M218.211 11.142L221.317 16.1806L223.136 14.9864L217.676 6.13135L217.103 6.50785L215.412 14.6961L212.329 9.69545L210.497 10.8976L215.95 19.7403L216.499 19.3797L218.211 11.142Z" fill="currentColor"></path><path d="M230.451 6.01389L232.113 11.7347L234.178 11.096L231.258 1.04199L230.607 1.24349L226.821 8.64829L225.173 2.9707L223.094 3.61349L226.01 13.6529L226.633 13.4603L230.451 6.01389Z" fill="currentColor"></path><path d="M245.687 2.0835L248.268 2.31L247.72 8.9595L243.928 8.6269C244.385 8.3675 244.641 7.7305 244.722 7.273L245.687 2.0835ZM240.977 8.3228L240.699 11.6848L242.732 11.8632L242.853 10.3906C245.031 10.5816 246.659 10.7247 248.836 10.9157L248.715 12.3883L250.647 12.558L250.924 9.196L249.843 9.1011L250.545 0.577C248.484 0.3961 246.033 0.1809 243.971 0L242.596 6.9965C242.398 7.9832 242.189 8.4142 241.323 8.3533L240.977 8.3228Z" fill="currentColor"></path><path d="M264.204 10.428C265.422 7.15257 263.738 4.47077 261.266 3.49187C258.754 2.49677 255.769 3.31357 254.545 6.60287C253.322 9.89257 254.952 12.5531 257.478 13.5531C260.341 14.6876 263.099 13.3969 264.204 10.428ZM256.585 7.41077C257.352 5.34797 259.065 4.82687 260.551 5.41527C262.023 5.99847 262.964 7.55427 262.191 9.63117C261.398 11.7638 259.688 12.2375 258.215 11.6546C256.702 11.0552 255.792 9.54337 256.585 7.41077Z" fill="currentColor"></path><path d="M267.154 12.1415C265.11 14.8898 266.016 17.9398 268.128 19.6121C269.804 20.9388 272.192 21.3808 274.166 19.4621L272.513 18.1533C271.489 18.9422 270.313 18.7825 269.314 17.992C267.879 16.8558 267.83 14.9353 268.887 13.5137C270.059 11.9387 271.804 11.6267 273.227 12.7536C274.191 13.5168 274.606 14.5042 274.267 15.7218L275.931 17.0394C277.087 14.6992 276.035 12.4357 274.416 11.1545C272.331 9.44655 269.206 9.38175 267.154 12.1415Z" fill="currentColor"></path><path d="M281.384 20.8529L274.933 26.1553L276.24 27.8485L282.691 22.5461L284.368 24.7183L285.839 23.509L281.169 17.46L279.698 18.6692L281.384 20.8529Z" fill="currentColor"></path><path d="M282.205 32.6264C281.072 32.6509 280.655 32.1467 280.592 31.0312L278.88 31.5654C279.138 34.3449 280.577 34.8638 282.829 34.7882L291.448 34.8163L291.643 34.7174L290.63 32.5864L285.711 32.7142L285.679 32.6473L288.68 28.4846L287.629 26.2729L287.382 26.3978L283.214 32.6145L282.205 32.6264Z" fill="currentColor"></path><path d="M293.031 38.9092L283.113 41.024C283.259 41.7552 283.406 42.4859 283.552 43.2171L291.543 41.5132L292.325 45.4169L284.334 47.1209C284.48 47.852 284.626 48.5828 284.773 49.314L294.691 47.1996L293.031 38.9092Z" fill="currentColor"></path><path d="M284.499 61.314L294.603 62.0389L294.753 59.805L290.9 59.5282L291.169 55.5367L295.023 55.8131L295.172 53.5939L285.069 52.8691L284.919 55.0883L289.191 55.3947L288.923 59.3863L284.65 59.0794L284.499 61.314Z" fill="currentColor"></path><path d="M292.61 71.0049L293.396 68.9819L283.996 65.0913L282.402 69.1929C281.61 71.2299 282.449 72.9609 283.891 73.7829C285.605 74.7489 287.913 74.3049 288.861 71.8659L289.669 69.7879L292.382 70.9099C292.449 70.9389 292.529 70.9719 292.61 71.0049ZM287.088 71.1329C286.712 72.1029 285.703 72.3289 284.89 71.8959C284.041 71.4319 283.881 70.6409 284.296 69.5749C284.522 68.9929 284.761 68.4159 284.983 67.8479L287.896 69.0539L287.169 70.9249C287.142 70.9939 287.116 71.0629 287.088 71.1329ZM289.114 79.9979L289.916 77.9339L280.517 74.0429L279.714 76.1079L289.114 79.9979Z" fill="currentColor"></path><path d="M275.091 93.0558C276.441 94.4288 278.158 94.2478 279.458 92.8868L282.475 89.7288L275.272 82.4028L271.971 85.8588C270.549 87.3478 270.582 89.0998 271.85 90.3888C272.591 91.1428 273.534 91.3678 274.473 90.9608C274.304 91.7108 274.565 92.5218 275.091 93.0558ZM278.251 91.4278C277.723 91.9808 277.048 91.9858 276.532 91.4408C276.058 90.9378 276.095 90.3038 276.612 89.7618L278.004 88.3058L279.643 89.9708L278.251 91.4278ZM275.132 88.7168C274.899 88.9618 274.675 89.1538 274.378 89.2088C274.01 89.2738 273.631 89.1188 273.352 88.8148C272.899 88.2908 272.894 87.6578 273.412 87.1148L275.098 85.3498L276.747 87.0268L275.132 88.7168Z" fill="currentColor"></path><path d="M270.89 94.0099C269.193 91.0209 266.114 90.7369 263.817 92.1249C261.994 93.2269 260.697 95.3439 261.676 97.9529L263.473 96.8669C263.151 95.5899 263.738 94.5259 264.824 93.8699C266.385 92.9269 268.127 93.6029 269.005 95.1499C269.977 96.8629 269.599 98.6479 268.051 99.5839C267.003 100.218 265.96 100.243 264.996 99.4589L263.185 100.553C264.85 102.54 267.279 102.388 269.038 101.323C271.358 99.9739 272.594 97.0119 270.89 94.0099Z" fill="currentColor"></path><path d="M253.824 107.485L259.796 105.74L257.036 95.6838L250.952 97.4618L251.489 99.4158L255.47 98.2518L256.101 100.55L252.482 101.608L252.998 103.49L256.617 102.432L257.177 104.472L253.308 105.603L253.824 107.485Z" fill="currentColor"></path><path d="M243.153 103.744L247.292 108.65L248.088 108.638L247.931 98.1577L245.761 98.1927L245.846 103.851L243.251 100.607L242.975 100.611L240.479 103.936L240.394 98.2777L238.224 98.3127L238.38 108.793L239.162 108.78L243.153 103.744Z" fill="currentColor"></path><path d="M278.184 55.3667C278.184 76.0099 262.266 92.5789 242.831 92.5789C223.395 92.5789 207.478 76.0099 207.478 55.3667C207.478 34.7236 223.395 18.1548 242.831 18.1548C262.266 18.1548 278.184 34.7236 278.184 55.3667Z" stroke="white" stroke-width="3.95437"></path></svg> </div>
+  <div class="title"><img src="https://malysh92.github.io/halloween-pumpkin-night/assets/title.webp" alt="Тыквы сбежали"></div>
+  <p class="lead">Они прячутся в окнах дома.<br>Поймайте <b>пять</b> — и заберёте подарок.</p>
+  <div class="counter" id="counter" aria-live="polite"></div>
+  <p class="hint" id="hint">Жмите на окно, где появилась тыква</p>
+  <button class="start" id="start" type="button" aria-label="Начать игру">
+    <span class="wing-w"><img src="https://malysh92.github.io/halloween-pumpkin-night/assets/wing.webp" alt=""></span>
+    <span class="wing-w wr"><img src="https://malysh92.github.io/halloween-pumpkin-night/assets/wing.webp" alt=""></span>
+    <img class="plate" src="https://malysh92.github.io/halloween-pumpkin-night/assets/btn.webp" alt="Начать игру">
+    <i class="em" style="left:34%;--dx:-10px;animation-delay:0s"></i><i class="em" style="left:46%;--dx:8px;animation-delay:.9s"></i>
+    <i class="em" style="left:58%;--dx:-6px;animation-delay:1.7s"></i><i class="em" style="left:68%;--dx:12px;animation-delay:2.4s"></i>
+  </button>
+</div>
+
+<div id="fx"></div>
+<div id="bats"></div>
+
+<section id="s2">
+  <div id="cam2"><div id="world2">
+    <img class="bg" src="https://malysh92.github.io/halloween-pumpkin-night/assets/bg2.webp" alt="" draggable="false">
+    <div id="amb2"></div>
+    <div class="vig"></div>
+    <div class="shade"></div>
+  </div></div>
+  <div id="hud2">
+    <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="arrowGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0b8"/><stop offset=".5" stop-color="#f0b24a"/><stop offset="1" stop-color="#c0661a"/></linearGradient></defs></svg>
+    <div class="logo2" id="logo2" role="img" aria-label="PRO.FINANSY"></div>
+    <h2 class="title2"><img src="https://malysh92.github.io/halloween-pumpkin-night/assets/title2.webp" alt="Все пойманы"></h2>
+    <p class="lead2">Сотрите карточку пальцем — под ней ваш подарок.</p>
+    <div id="ticket">
+      <div class="rays" id="rays"></div>
+      <div class="tk-shadow" id="tkShadow"></div>
+      <div class="tk-card" id="tkCard">
+        <img class="tk-open" src="https://malysh92.github.io/halloween-pumpkin-night/assets/ticket_open.webp" alt="">
+        <div class="gift" aria-live="polite">
+          <div class="g-l">Ваш подарок</div>
+          <div class="g-h" id="giftTitle"></div>
+          <div class="g-d"></div>
+          <div class="g-t"><span class="g-p">+</span><span class="g-n" id="tixNum"></span><span class="g-tl" id="tixLabel"></span></div>
+        </div>
+        <canvas id="scratch" aria-label="Стирающаяся карточка" tabindex="0"></canvas>
+        <div class="sheen"></div>
+      </div>
+    </div>
+    <div class="arrows" aria-hidden="true">
+      <svg viewBox="0 0 140 64"><path d="M12 54 L70 12 L128 54" /></svg>
+      <svg viewBox="0 0 140 64"><path d="M12 54 L70 12 L128 54" /></svg>
+      <svg viewBox="0 0 140 64"><path d="M12 54 L70 12 L128 54" /></svg>
+    </div>
+    <p class="cta-text">Подарок пришлёт бот. Там же расскажет, зачем билеты и где они пригодятся.</p>
+    <a class="cta" id="cta" href="#" target="_blank" rel="noopener">
+      <span class="wing-w"><img src="https://malysh92.github.io/halloween-pumpkin-night/assets/wing.webp" alt=""></span>
+      <span class="wing-w wr"><img src="https://malysh92.github.io/halloween-pumpkin-night/assets/wing.webp" alt=""></span>
+      <img class="plate" src="https://malysh92.github.io/halloween-pumpkin-night/assets/cta.webp" alt="Забрать подарок">
+      <i class="em" style="left:34%;--dx:-10px;animation-delay:0s"></i><i class="em" style="left:46%;--dx:8px;animation-delay:.9s"></i>
+      <i class="em" style="left:58%;--dx:-6px;animation-delay:1.7s"></i><i class="em" style="left:68%;--dx:12px;animation-delay:2.4s"></i>
+    </a>
+  </div>
+</section>
+
+<button id="snd" type="button" aria-label="Звук">
+  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+</button>
+<audio id="music" src="https://malysh92.github.io/halloween-pumpkin-night/assets/music.mp3" loop preload="auto"></audio>
+
+<script>
+(function pumpkinNight(){
+/* ===== НАСТРОЙКИ ===== */
+const GOAL = 5;                 // сколько тыкв поймать
+const MUSIC_VOLUME = .5;        // громкость музыки (0..1)
+const BOT_URL = "https://t.me/YOUR_BOT?start=halloween";   // ссылка на бота (одна для всех)
+const GIFT_TITLE = "До ужаса полезный аудио-разбор: что происходит сейчас на российском рынке";
+const TICKETS = 15;             // сколько билетов на Чёрную пятницу
+const MISS_PENALTY = false;     // true — промах отнимает одну пойманную тыкву
+const STAY_START = 1050;        // сколько мс тыква сидит в окне в начале...
+const STAY_MIN = 480;           // ...и в конце игры
+const STAY_STEP = 130;          // на сколько мс быстрее после каждой пойманной
+/* ===================== */
+
+const W = 2000, H = 1125;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = s => document.querySelector(s);
+const world = $("#world"), hud = $("#hud"), fx = $("#fx"), hint = $("#hint");
+const world2 = $("#world2"), hud2 = $("#hud2");
+const music = $("#music"), sndBtn = $("#snd");
+const rand = (a, b) => a + Math.random() * (b - a);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function plural(n, one, few, many){ const m10=n%10, m100=n%100;
+  if(m10===1&&m100!==11) return one; if(m10>=2&&m10<=4&&(m100<12||m100>14)) return few; return many; }
+
+/* ---------- масштаб ---------- */
+let SCALE = 1, PORTRAIT = false;
+function layout(){
+  const vw = innerWidth, vh = innerHeight;
+  PORTRAIT = vw / vh < 0.9;
+  document.body.classList.toggle("portrait", PORTRAIT);
+  let s, tx, ty;
+  if(!PORTRAIT){ s = Math.max(vw / W, vh / H); tx = (vw - W * s) / 2; ty = (vh - H * s) / 2; }
+  else { s = vw / 1240; tx = (vw - W * s) / 2; ty = vh - H * s; }
+  SCALE = s;
+  const t = `translate(${tx}px,${ty}px) scale(${s})`;
+  world.style.transform = t; world2.style.transform = t;
+  // HUD не даём срезать сверху на широких мониторах: при обрезке картинки сдвигаем его вниз (не больше чем на 70 ед.)
+  const crop = Math.max(0, -ty / s);
+  const th = `translate(${tx}px,${ty + s * Math.min(crop, 70)}px) scale(${s})`;
+  hud.style.transform = PORTRAIT ? "" : th; hud2.style.transform = PORTRAIT ? "" : th;
+  const st = $("#start");
+  st.style.top = PORTRAIT ? (ty + 868 * s) + "px" : "";
+  st.style.transform = PORTRAIT ? "translate(-50%,-50%)" : "";
+  // увеличенная зона нажатия окон, чтобы попадать пальцем
+  const pad = Math.max(0, Math.min(24, (46 / s - 52) / 2));
+  world.style.setProperty("--pad", pad + "px");
+}
+addEventListener("resize", layout); layout();
+
+/* ---------- прелоадер и фоновая подгрузка второго экрана ---------- */
+$("#preLogo").innerHTML = $(".logo").innerHTML;
+const CRITICAL = ["bg1.webp","title.webp","btn.webp","wing.webp","pumpkin.webp","window_lit.webp","counter_full.webp","counter_empty.svg","spider.webp"].map(f => "https://malysh92.github.io/halloween-pumpkin-night/assets/" + f);
+const SCREEN2_ASSETS = ["bg2.webp","ticket_cover.webp","ticket_open.webp","title2.webp","cta.webp"].map(f => "https://malysh92.github.io/halloween-pumpkin-night/assets/" + f);
+const keepAlive = [];
+function loadImg(src){
+  return new Promise(res => {
+    const i = new Image(); i.onload = () => { (i.decode ? i.decode() : Promise.resolve()).catch(() => {}).then(() => res(i)); }; i.onerror = () => res(i); i.src = src;
+  });
+}
+(async function preload(){
+  const t0 = performance.now(), bar = $("#preBar"), total = CRITICAL.length + 1; let done = 0;
+  const bump = () => { bar.style.transform = `scaleX(${Math.min(1, ++done / total)})`; };
+  const fonts = Promise.race([document.fonts ? document.fonts.ready : 0, sleep(3500)]).then(bump);
+  await Promise.race([Promise.all([fonts, ...CRITICAL.map(u => loadImg(u).then(bump))]), sleep(10000)]);
+  await sleep(Math.max(0, 650 - (performance.now() - t0)));        // не мигаем, если всё в кэше
+  document.body.classList.add("ready"); $("#pre").classList.add("hide"); setTimeout(() => $("#pre").remove(), 900);
+  // пока человек играет, тихо подгружаем второй экран
+  setTimeout(() => SCREEN2_ASSETS.forEach(u => loadImg(u).then(i => keepAlive.push(i))), 1500);
+})();
+
+/* ---------- счётчик ---------- */
+const counter = $("#counter"), slots = [];
+for(let i = 0; i < GOAL; i++){
+  const s = document.createElement("div"); s.className = "slot";
+  s.style.setProperty("--i", i);
+  s.innerHTML = '<img class="empty" src="https://malysh92.github.io/halloween-pumpkin-night/assets/counter_empty.svg" alt=""><img class="full" src="https://malysh92.github.io/halloween-pumpkin-night/assets/counter_full.webp" alt="">';
+  counter.appendChild(s); slots.push(s);
+}
+
+/* ---------- окна ---------- */
+// координаты стёкол на исходной картинке (3840×2160), переводим в мир 2000×1125
+const GLASS = [[95,95,100,195],[382,95,101,195],[675,95,100,195],[962,95,103,195],
+               [82,395,108,205],[375,395,107,205],[675,395,105,205],[967,395,108,205]];
+const winsBox = $("#wins"), wins = [];
+GLASS.forEach(([x,y,w,h]) => {
+  const el = document.createElement("div"); el.className = "win";
+  el.style.cssText = `left:${(1344+x)/1.92}px;top:${(845+y)/1.92}px;width:${w/1.92}px;height:${h/1.92}px;--d:${-rand(0,3).toFixed(2)}s`;
+  el.innerHTML = '<div class="spill"></div><div class="glass"><img class="lit" src="https://malysh92.github.io/halloween-pumpkin-night/assets/window_lit.webp" alt="" draggable="false"><img class="pk" src="https://malysh92.github.io/halloween-pumpkin-night/assets/pumpkin.webp" alt="" draggable="false"></div><button class="hit" type="button" aria-label="Окно"></button>';
+  const w_ = { el, has:false, timer:0 };
+  el.querySelector(".hit").addEventListener("pointerdown", e => { e.preventDefault(); tap(w_); });
+  el.querySelector(".hit").addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); tap(w_); } });
+  winsBox.appendChild(el); wins.push(w_);
+});
+const setOn = (w, on) => w.el.classList.toggle("on", on);
+
+/* ---------- игра ---------- */
+let state = "intro", caught = 0, loopSpawn = 0, loopFlick = 0;
+
+function flicker(){
+  const free = wins.filter(w => !w.has);
+  const lit = free.filter(w => w.el.classList.contains("on"));
+  if(lit.length >= 3 || (lit.length && Math.random() < .5)){ setOn(lit[Math.floor(Math.random()*lit.length)], false); }
+  else { setOn(free[Math.floor(Math.random()*free.length)], true); }
+}
+function activeCount(){ return wins.filter(w => w.has).length; }
+function place(w, stay, canHop){
+  w.has = true; setOn(w, true); w.el.classList.add("has");
+  w.el.querySelector(".hit").setAttribute("aria-label", "Окно с тыквой");
+  w.timer = setTimeout(() => {
+    // тыква может перепрыгнуть в другое окно, не дожидаясь, пока её поймают
+    const free = wins.filter(x => !x.has && x !== w);
+    if(canHop && free.length && state === "playing"){
+      hide(w, true);
+      place(free[Math.floor(Math.random() * free.length)], stay * .7, false);
+    } else hide(w, true);
+  }, canHop ? stay * .45 : stay);
+}
+function spawn(){
+  if(state !== "playing") return;
+  const stay = reduce ? 2200 : Math.max(STAY_MIN, STAY_START - caught * STAY_STEP);
+  // с третьей тыквы иногда выглядывают сразу две
+  const n = (caught >= 2 && Math.random() < .5) ? 2 : 1;
+  for(let k = 0; k < n && activeCount() < 2; k++){
+    const free = wins.filter(w => !w.has);
+    if(!free.length) break;
+    place(free[Math.floor(Math.random() * free.length)], stay, !reduce && caught >= 1 && Math.random() < .5);
+  }
+  loopSpawn = setTimeout(spawn, reduce ? 2400 : Math.max(480, 900 - caught * 110));
+}
+function hide(w, maybeOff){
+  clearTimeout(w.timer); w.has = false; w.el.classList.remove("has");
+  w.el.querySelector(".hit").setAttribute("aria-label", "Окно");
+  if(maybeOff && Math.random() < .5) setOn(w, false);
+}
+function refreshSlots(){ slots.forEach((sl, i) => sl.classList.toggle("on", i < caught)); }
+function tap(w){
+  if(state !== "playing") return;
+  if(w.has){ catchPumpkin(w); return; }
+  w.el.classList.remove("miss"); void w.el.offsetWidth; w.el.classList.add("miss"); shake(6);
+  if(MISS_PENALTY && caught > 0){
+    caught--; refreshSlots();
+    hint.textContent = "Мимо! Одна тыква сбежала обратно";
+    if(navigator.vibrate) navigator.vibrate([20, 40, 20]);
+  } else hint.textContent = "Мимо. Тыква была не здесь";
+}
+function catchPumpkin(w){
+  const g = w.el.querySelector(".glass").getBoundingClientRect();
+  hide(w, false); setOn(w, true); shake(3);
+  const idx = caught++;
+  flyToSlot(g, slots[Math.min(idx, GOAL - 1)]);
+  burst(g.left + g.width/2, g.top + g.height*.6);
+  if(navigator.vibrate) navigator.vibrate(30);
+  const left = GOAL - caught;
+  hint.textContent = left > 0 ? `Ещё ${left} ${plural(left,"тыква","тыквы","тыкв")}` : "Есть! Открываем подарок…";
+  if(caught >= GOAL) finish();
+}
+function flyToSlot(g, slot){
+  const img = document.createElement("img"); img.className = "fly"; img.src = "https://malysh92.github.io/halloween-pumpkin-night/assets/pumpkin.webp"; img.alt = "";
+  const size = Math.max(50, g.width * 1.0); img.style.width = size + "px";
+  fx.appendChild(img);
+  const sx = g.left + g.width/2 - size/2, sy = g.top + g.height*.45 - size/2;
+  const t = slot.getBoundingClientRect(), k = (t.width * .95) / size;
+  const ex = t.left + t.width/2 - size/2, ey = t.top + t.height/2 - size/2;
+  const mx = (sx + ex)/2 + (Math.random()<.5?-1:1)*rand(40,110), my = Math.min(sy, ey) - rand(50,120);
+  const a = img.animate([
+    { transform:`translate(${sx}px,${sy}px) scale(1)`, opacity:1 },
+    { transform:`translate(${mx}px,${my}px) scale(${(1+k)/1.6})`, opacity:1, offset:.5 },
+    { transform:`translate(${ex}px,${ey}px) scale(${k})`, opacity:1 }
+  ], { duration: reduce ? 200 : 780, easing:"cubic-bezier(.45,.05,.55,.95)" });
+  a.onfinish = () => { img.remove(); refreshSlots(); };
+}
+function burst(x, y){
+  if(reduce) return;
+  for(let i = 0; i < 12; i++){
+    const p = document.createElement("div"); p.className = "spark"; fx.appendChild(p);
+    const ang = rand(0, Math.PI*2), d = rand(30, 90);
+    p.animate([{ transform:`translate(${x}px,${y}px) scale(1)`, opacity:1 },
+               { transform:`translate(${x+Math.cos(ang)*d}px,${y+Math.sin(ang)*d-20}px) scale(.2)`, opacity:0 }],
+              { duration: rand(450,800), easing:"ease-out" }).onfinish = () => p.remove();
+  }
+}
+
+/* ---------- старт и музыка ---------- */
+let fadeTimer = 0;
+function fadeMusic(to, ms){
+  clearInterval(fadeTimer); const from = music.volume, t0 = performance.now();
+  fadeTimer = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    music.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    if(k >= 1) clearInterval(fadeTimer);
+  }, 40);
+}
+$("#start").addEventListener("click", () => {
+  if(state !== "intro") return;
+  music.volume = 0; music.play().then(() => fadeMusic(MUSIC_VOLUME, 2500)).catch(() => {});
+  begin();
+});
+sndBtn.addEventListener("click", () => {
+  const m = !sndBtn.classList.contains("muted"); sndBtn.classList.toggle("muted", m);
+  if(m){ fadeMusic(0, 400); setTimeout(() => { if(sndBtn.classList.contains("muted")) music.pause(); }, 450); }
+  else { music.play().catch(()=>{}); fadeMusic(MUSIC_VOLUME, 600); }
+});
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden) music.pause(); else if(state !== "intro" && !sndBtn.classList.contains("muted")) music.play().catch(()=>{});
+});
+
+function begin(){
+  state = "playing"; document.body.classList.add("playing");
+  wins.forEach(w => setOn(w, false));
+  loopSpawn = setTimeout(spawn, 900);
+}
+// на заставке тихо мерцают пара окон
+loopFlick = setInterval(() => { if(state === "intro" || state === "playing") flicker(); }, reduce ? 2000 : 650);
+
+/* ---------- переход на второй экран ---------- */
+const BAT_SVG = `<svg viewBox="0 0 120 60"><g transform="translate(0,0)">
+  <g class="w"><path d="M58 34C52 22 40 12 20 13c6 4 5 9 8 13C20 24 10 28 2 40c12-3 20-1 27 5 5-6 14-7 22-1 3-4 5-6 7-10z"/></g>
+  <g transform="matrix(-1 0 0 1 120 0)"><g class="w"><path d="M58 34C52 22 40 12 20 13c6 4 5 9 8 13C20 24 10 28 2 40c12-3 20-1 27 5 5-6 14-7 22-1 3-4 5-6 7-10z"/></g></g>
+  <ellipse cx="60" cy="36" rx="6.5" ry="11"/><path d="M54 27l-2-9 6 5zM66 27l2-9-6 5z"/></g></svg>`;
+function flyBats(){
+  const box = $("#bats"), vw = innerWidth, vh = innerHeight;
+  for(let i = 0; i < 16; i++){
+    const b = document.createElement("div"); b.className = "bat"; b.innerHTML = BAT_SVG;
+    const w = rand(vw*.04, vw*.11); b.style.width = w + "px"; box.appendChild(b);
+    const y0 = rand(vh*.55, vh*1.05), y1 = rand(-vh*.1, vh*.45), mid = rand(vh*.15, vh*.8);
+    const x0 = -w - rand(0, vw*.25), x1 = vw + w, dir = Math.random() < .25;
+    const A = dir ? x1 : x0, B = dir ? x0 : x1;
+    b.style.scale = dir ? "-1 1" : "1 1";
+    b.animate([
+      { transform:`translate(${A}px,${y0}px)` },
+      { transform:`translate(${(A+B)/2}px,${mid}px) rotate(${rand(-8,8)}deg)`, offset:.5 },
+      { transform:`translate(${B}px,${y1}px)` }
+    ], { duration: rand(1700, 2900), delay: rand(0, 900), easing:"ease-in-out", fill:"both" }).onfinish = () => b.remove();
+  }
+}
+/* Дым: шейдер с шумом. Чёрные клубы поднимаются снизу, закручиваются и затягивают весь экран; потом рассеиваются. */
+const smoke = (() => {
+  const cv = document.createElement("canvas"); cv.id = "smoke"; document.body.appendChild(cv);
+  const gl = cv.getContext("webgl", { premultipliedAlpha:true, alpha:true });
+  let prog, uRes, uT, uC, running = false, cover = 0, tt = 0, last = 0;
+  if(gl){
+    const vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+    const fs = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 res; uniform float t; uniform float cover;
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x), mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x), f.y); }
+float fbm(vec2 p){ float v=0., a=.5; for(int i=0;i<6;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=.5; } return v; }
+void main(){
+  vec2 uv = gl_FragCoord.xy / res;
+  vec2 p = uv * vec2(res.x/res.y, 1.) * 2.4;
+  vec2 q = vec2(fbm(p + vec2(0., -t*.30)), fbm(p + vec2(5.2, 1.3) - t*.22));
+  vec2 r = vec2(fbm(p + 2.2*q + vec2(1.7, 9.2) + t*.12), fbm(p + 2.2*q + vec2(8.3, 2.8) - t*.17));
+  float n = fbm(p + 2.4*r + vec2(0., -t*.40));
+  float low = (0.55 - uv.y) * .85 * (1. - cover);          // дым сначала копится внизу
+  float lift = cover * 1.55 - .78 + low;
+  float d = smoothstep(.38, .82, n * .92 + .1 + lift);
+  float core = smoothstep(.55, 1.05, n + lift);            // плотное чёрное ядро
+  vec3 wisp = vec3(.17,.19,.23) * (1. - core) * (.4 + n);
+  vec3 col = mix(vec3(.012,.013,.018), wisp, (1. - d*.2) * (1. - core) * .9);
+  gl_FragColor = vec4(col * d, d);
+}`;
+    const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+    prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
+    gl.useProgram(prog);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    uRes = gl.getUniformLocation(prog, "res"); uT = gl.getUniformLocation(prog, "t"); uC = gl.getUniformLocation(prog, "cover");
+  }
+  function size(){ const k = Math.min(.55, 1100 / Math.max(innerWidth, 1)); cv.width = Math.max(2, innerWidth * k | 0); cv.height = Math.max(2, innerHeight * k | 0); if(gl) gl.viewport(0, 0, cv.width, cv.height); }
+  function draw(ms){
+    if(!running) return;
+    const dt = Math.min(.05, (ms - last) / 1000); last = ms; tt += dt;
+    if(gl){ gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform2f(uRes, cv.width, cv.height); gl.uniform1f(uT, tt); gl.uniform1f(uC, cover); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
+    else { const c = cv.getContext("2d"); c.clearRect(0,0,cv.width,cv.height); c.fillStyle = `rgba(2,3,5,${cover})`; c.fillRect(0,0,cv.width,cv.height); }
+    requestAnimationFrame(draw);
+  }
+  // плавно меняем «степень заволакивания» от a до b
+  return function run(a, b, ms, ease){
+    return new Promise(res => {
+      size(); cv.style.opacity = 1; running = true; last = performance.now(); requestAnimationFrame(draw);
+      const t0 = performance.now();
+      (function step(now){
+        const k = Math.min(1, (now - t0) / ms), e = ease ? ease(k) : k * k * (3 - 2 * k);
+        cover = a + (b - a) * e;
+        if(k < 1) requestAnimationFrame(step);
+        else { if(b === 0){ running = false; cv.style.opacity = 0; } res(); }
+      })(t0);
+    });
+  };
+})();
+async function finish(){
+  // последняя тыква: сразу трясёмся и сразу наползает дым
+  state = "transition"; clearTimeout(loopSpawn);
+  wins.forEach(w => { hide(w, false); setOn(w, true); });
+  if(!reduce){
+    flyBats();
+    shake(9);
+    const rumble = setInterval(() => shake(rand(5, 8)), 140);
+    setTimeout(() => clearInterval(rumble), 2600);
+  }
+  await smoke(0, 1, reduce ? 300 : 1100, k => k * k);              // чёрный дым быстро затягивает экран
+  showS2();
+  smoke(1, 0, reduce ? 300 : 1500, k => 1 - Math.pow(1 - k, 1.8)); // и сразу же рассеивается
+}
+
+/* ---------- экран 2 ---------- */
+$("#logo2").innerHTML = $(".logo").innerHTML;
+$("#giftTitle").textContent = GIFT_TITLE;
+$("#tixNum").textContent = TICKETS;
+$("#tixLabel").innerHTML = plural(TICKETS,"билет","билета","билетов") + " на<br>Чёрную пятницу";
+$("#cta").href = BOT_URL;
+
+const ticket = $("#ticket"), tkCard = $("#tkCard"), scratchCv = $("#scratch");
+let revealed = false, scratchStarted = false;
+
+function showS2(){
+  state = "done"; $("#s2").classList.add("show");
+  setupScratch();
+  flyTicket();
+}
+async function flyTicket(){
+  await sleep(reduce ? 200 : 600);           // билет вылетает, пока дым ещё рассеивается
+  const sh = $("#tkShadow");
+  if(reduce){ tkCard.style.opacity = 1; ticket.classList.add("ready"); return; }
+  tkCard.animate([
+    { transform:"translate3d(0,-420px,-1100px) rotateX(40deg) rotateY(-55deg) rotateZ(-20deg)", opacity:0 },
+    { opacity:1, offset:.3 },
+    { transform:"translate3d(0,16px,28px) rotateX(-3deg) rotateY(-2deg) rotateZ(-1deg)", opacity:1, offset:.84 },
+    { transform:"none", opacity:1 }
+  ], { duration: 1500, easing:"cubic-bezier(.25,.6,.3,1)", fill:"forwards" });
+  sh.animate([{ opacity:0, transform:"scale(.5)" }, { opacity:0, offset:.5 }, { opacity:1, transform:"scale(1)" }], { duration: 1500, fill:"forwards" });
+  await sleep(1500 * .84);
+  shake(3);
+  const r = ticket.getBoundingClientRect();
+  for(let k = 0; k < 2; k++) burst(r.left + r.width * rand(.1, .9), r.bottom - r.height * .05);
+  await sleep(1500 * .16 + 100);
+  tkCard.style.opacity = 1;
+  ticket.classList.add("ready");
+}
+function setupScratch(){
+  if(scratchCv.dataset.ready) return; scratchCv.dataset.ready = 1;
+  const CW = 1700, CH = 745, R = 82;               // размер холста и радиус кисти (в пикселях холста)
+  scratchCv.width = CW; scratchCv.height = CH;
+  const ctx = scratchCv.getContext("2d");
+  const cover = new Image(); cover.src = "https://malysh92.github.io/halloween-pumpkin-night/assets/ticket_cover.webp"; cover.onload = () => ctx.drawImage(cover, 0, 0, CW, CH);
+  // маленькая копия для подсчёта, сколько стёрто
+  const cc = document.createElement("canvas"); cc.width = 85; cc.height = 37; const cctx = cc.getContext("2d");
+  cctx.fillStyle = "#000"; cctx.fillRect(0, 0, 85, 37); cctx.strokeStyle = cctx.fillStyle = "#fff"; cctx.lineCap = "round";
+  let down = false, last = null, moves = 0, lastFlake = null;
+  const pos = e => { const b = scratchCv.getBoundingClientRect(); return { x: (e.clientX - b.left) / b.width * CW, y: (e.clientY - b.top) / b.height * CH }; };
+  function stroke(a, b){
+    ctx.globalCompositeOperation = "destination-out"; ctx.lineCap = ctx.lineJoin = "round"; ctx.lineWidth = R * 2;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill();
+    cctx.lineWidth = R * 2 / 20; cctx.beginPath(); cctx.moveTo(a.x / 20, a.y / 20); cctx.lineTo(b.x / 20, b.y / 20); cctx.stroke();
+    cctx.beginPath(); cctx.arc(b.x / 20, b.y / 20, R / 20, 0, Math.PI * 2); cctx.fill();
+  }
+  function flakes(e){
+    if(reduce) return;
+    if(lastFlake && Math.hypot(e.clientX - lastFlake.x, e.clientY - lastFlake.y) < 14) return;
+    lastFlake = { x: e.clientX, y: e.clientY };
+    for(let i = 0; i < 2; i++){
+      const f = document.createElement("div"); f.className = "flake"; fx.appendChild(f);
+      const dx = rand(-46, 46), up = rand(10, 40), fall = rand(40, 110), rot = rand(-260, 260);
+      f.animate([
+        { transform:`translate(${e.clientX}px,${e.clientY}px) rotate(0)`, opacity:1 },
+        { transform:`translate(${e.clientX + dx * .6}px,${e.clientY - up}px) rotate(${rot * .5}deg)`, opacity:1, offset:.3 },
+        { transform:`translate(${e.clientX + dx}px,${e.clientY + fall}px) rotate(${rot}deg)`, opacity:0 }
+      ], { duration: rand(550, 950), easing:"cubic-bezier(.3,.1,.6,1)" }).onfinish = () => f.remove();
+    }
+  }
+  function cleared(){
+    const d = cctx.getImageData(9, 8, 67, 21).data; let n = 0;       // считаем только внутреннюю часть билета
+    for(let i = 0; i < d.length; i += 4) if(d[i] > 128) n++;
+    return n / (d.length / 4);
+  }
+  scratchCv.addEventListener("pointerdown", e => { if(revealed) return; down = true; scratchStarted = true; scratchCv.setPointerCapture(e.pointerId); last = pos(e); stroke(last, last); flakes(e); });
+  scratchCv.addEventListener("pointermove", e => {
+    if(!down || revealed) return; const p = pos(e); stroke(last, p); last = p; flakes(e);
+    if(++moves % 8 === 0 && cleared() > .52) reveal();
+  });
+  const up = () => { down = false; last = null; if(!revealed && cleared() > .52) reveal(); };
+  scratchCv.addEventListener("pointerup", up); scratchCv.addEventListener("pointercancel", () => { down = false; last = null; });
+  scratchCv.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); reveal(); } });
+}
+function reveal(){
+  if(revealed) return; revealed = true;
+  if(navigator.vibrate) navigator.vibrate([40, 40, 90]);
+  shake(5);
+  scratchCv.animate([{ opacity:1, transform:"scale(1)" }, { opacity:0, transform:"scale(1.04)" }], { duration: reduce ? 100 : 700, fill:"forwards", easing:"ease-out" });
+  scratchCv.style.pointerEvents = "none";
+  ticket.classList.add("open", "done");
+  if(!reduce){
+    $("#rays").animate([{ opacity:0, transform:"scale(.5) rotate(0)" }, { opacity:.9, offset:.25 }, { opacity:0, transform:"scale(1.15) rotate(28deg)" }], { duration: 2600, easing:"ease-out" });
+    const r = ticket.getBoundingClientRect();
+    for(let k = 0; k < 6; k++) setTimeout(() => burst(r.left + r.width * rand(.15, .85), r.top + r.height * rand(.25, .75)), k * 90);
+  }
+  setTimeout(() => $("#s2").classList.add("open"), reduce ? 100 : 1500);
+}
+
+/* ---------- живой фон: глаза, дымка, угольки, фонари ---------- */
+let eyesVisible = 0;
+function buildAmbience(amb, cfg){
+  cfg.lamps.forEach(([x,y,k],i) => { const l = document.createElement("div"); l.className = "lamp"; l.style.left = x+"px"; l.style.top = y+"px"; l.style.transform = `scale(${k||1})`; l.style.animationDelay = (-i*1.3)+"s"; amb.appendChild(l); });
+  if(!reduce) for(let i = 0; i < 5; i++){   // дымка у земли
+    const f = document.createElement("div"); f.className = "fogb";
+    const w = rand(700, 1100); f.style.cssText = `left:${rand(-200,1500)}px;top:${rand(820,1010)}px;width:${w}px;height:${w*.28}px`;
+    amb.appendChild(f);
+    f.animate([{ transform:"translateX(-90px)" }, { transform:`translateX(${rand(90,180)}px)` }], { duration: rand(14000,24000), direction:"alternate", iterations:Infinity, easing:"ease-in-out", delay:-rand(0,12000) });
+  }
+  if(!reduce) for(let i = 0; i < 18; i++){   // угольки
+    const e = document.createElement("div"); e.className = "ember"; e.style.left = rand(120,1880)+"px"; e.style.top = rand(760,1090)+"px"; amb.appendChild(e);
+    const dx = rand(-60,60);
+    e.animate([{ transform:"translate(0,0) scale(1)", opacity:0 }, { opacity:.9, offset:.2 }, { transform:`translate(${dx}px,${-rand(160,320)}px) scale(.3)`, opacity:0 }],
+              { duration: rand(5000,10000), iterations:Infinity, delay:-rand(0,9000), easing:"ease-out" });
+  }
+  cfg.eyes.forEach(([x,y,k]) => {   // светящиеся глаза: открываются, моргают, закрываются
+    const el = document.createElement("div"); el.className = "eyes"; el.style.cssText = `left:${x}px;top:${y}px;transform:scale(${k})`;
+    el.innerHTML = "<i></i><i></i>"; amb.appendChild(el);
+    const lids = [...el.children];
+    if(reduce) return;
+    (async function run(){
+      await sleep(rand(1500, 14000));
+      for(;;){
+        if(eyesVisible >= 5){ await sleep(rand(1500, 4000)); continue; }
+        eyesVisible++;
+        el.animate([{ opacity:0 }, { opacity:1 }], { duration: 600, fill:"forwards" });
+        lids.forEach(l => l.animate([{ transform:"scaleY(.05)" }, { transform:"scaleY(1)" }], { duration: 520, easing:"ease-out", fill:"both" }));
+        const stay = rand(2500, 7000), t0 = performance.now();
+        while(performance.now() - t0 < stay){
+          await sleep(rand(900, 2200));
+          lids.forEach(l => l.animate([{ transform:"scaleY(1)" }, { transform:"scaleY(.05)" }, { transform:"scaleY(1)" }], { duration: 240 }));
+        }
+        lids.forEach(l => l.animate([{ transform:"scaleY(1)" }, { transform:"scaleY(.05)" }], { duration: 300, fill:"both" }));
+        await el.animate([{ opacity:1 }, { opacity:0 }], { duration: 450, fill:"forwards" }).finished;
+        eyesVisible--;
+        await sleep(rand(3000, 11000));
+      }
+    })();
+  });
+}
+buildAmbience($("#amb"), {
+  lamps: [[330,745],[1678,745]],
+  eyes: [[120,255,1.1],[335,430,.8],[70,650,1.2],[1860,330,1],[1725,520,.9],[1935,430,1.3],[1605,885,.8],[395,935,.9],[250,95,.8],[1700,160,.8]]
+});
+buildAmbience($("#amb2"), {
+  lamps: [[352,455,.9],[1652,455,.9],[451,772,.6],[538,862,.6],[1868,790,1.1],[355,950,1.2]],
+  eyes: [[300,520,.9],[40,250,1],[1960,300,1],[1600,260,.8],[210,100,.8],[1790,90,.8],[660,700,.7],[1430,690,.7]]
+});
+// камера: лёгкое «дыхание», реакция на мышь и тряска
+const cam = $("#cam"), cam2 = $("#cam2"); let shakeAmp = 0, px = 0, py = 0, cx = 0, cy = 0;
+function shake(a){ shakeAmp = Math.max(shakeAmp, a); }
+addEventListener("pointermove", e => { px = (e.clientX / innerWidth - .5) * -12; py = (e.clientY / innerHeight - .5) * -7; });
+if(!reduce){
+  (function frame(ms){
+    const t = ms / 1000; cx += (px - cx) * .04; cy += (py - cy) * .04;
+    const jx = shakeAmp ? (Math.random() - .5) * 2 * shakeAmp : 0, jy = shakeAmp ? (Math.random() - .5) * 2 * shakeAmp : 0;
+    shakeAmp = shakeAmp < .08 ? 0 : shakeAmp * .9;
+    const x = cx + Math.sin(t * .35) * 3 + Math.sin(t * .83) * 1.2 + jx, y = cy + Math.cos(t * .29) * 2.4 + jy, r = Math.sin(t * .21) * .09;
+    const ct = `translate(${x}px,${y}px) rotate(${r}deg) scale(1.03)`; cam.style.transform = ct; cam2.style.transform = ct;
+    requestAnimationFrame(frame);
+  })(0);
+  (async function tremors(){ for(;;){ await sleep(rand(9000, 17000)); if(state !== "done") shake(rand(4, 7)); } })();
+  // одинокая летучая мышь пролетает по небу
+  (async function lonelyBat(){
+    await sleep(rand(6000, 12000));
+    for(;;){
+      const box = $("#bats"), vw = innerWidth, vh = innerHeight, b = document.createElement("div"); b.className = "bat"; b.innerHTML = BAT_SVG;
+      const w = rand(vw*.022, vw*.036), ltr = Math.random() < .5; b.style.width = w + "px"; b.style.scale = ltr ? "1 1" : "-1 1"; box.appendChild(b);
+      const y = rand(vh*.1, vh*.3), A = ltr ? -w : vw + w, B = ltr ? vw + w : -w;
+      await b.animate([{ transform:`translate(${A}px,${y}px)` }, { transform:`translate(${(A+B)/2}px,${y + rand(-60,60)}px)`, offset:.5 }, { transform:`translate(${B}px,${y + rand(-40,40)}px)` }],
+                      { duration: rand(6500, 9500), easing:"ease-in-out" }).finished;
+      b.remove(); await sleep(rand(12000, 26000));
+    }
+  })();
+}
+
+/* ---------- пауки сверху экрана ---------- */
+const SPIDERS = [ // только у левого и правого края: x в % ширины, размер, глубина в % высоты
+  { x: 2.5, k: .052, depth: 30 }, { x: 8,  k: .034, depth: 18 }, { x: 13, k: .044, depth: 24 },
+  { x: 87,  k: .044, depth: 24 }, { x: 92, k: .034, depth: 18 }, { x: 97.5, k: .056, depth: 32 }
+];
+function makeSpider(cfg){
+  const unit = Math.min(innerWidth, innerHeight * 1.6), w = Math.max(34, unit * cfg.k);
+  const sp = document.createElement("div"); sp.className = "sp"; sp.style.left = cfg.x + "%"; sp.style.width = w + "px"; sp.style.marginLeft = (-w/2) + "px";
+  sp.innerHTML = '<div class="drop"><div class="thread"></div><img src="https://malysh92.github.io/halloween-pumpkin-night/assets/spider.webp" alt=""></div>';
+  fx.appendChild(sp);
+  const drop = sp.firstElementChild, hh = w * 1.52, hide = -hh - 20;
+  drop.style.transform = `translateY(${hide}px)`;
+  sp.animate([{ transform:"rotate(-2.2deg)" }, { transform:"rotate(2.2deg)" }],
+             { duration: rand(2200, 3600), direction:"alternate", iterations:Infinity, easing:"ease-in-out", delay: -rand(0, 3000) });
+  return async function appear(){
+    const depth = innerHeight * cfg.depth / 100 * rand(.6, 1);
+    await drop.animate([
+      { transform:`translateY(${hide}px)` },
+      { transform:`translateY(${depth*.55}px)`, offset:.35, easing:"ease-in-out" },
+      { transform:`translateY(${depth*.5}px)`, offset:.48, easing:"ease-in-out" },
+      { transform:`translateY(${depth}px)` }
+    ], { duration: rand(2400, 3800), easing:"cubic-bezier(.4,0,.3,1)", fill:"forwards" }).finished;
+    const hang = rand(1500, 3500), t0 = performance.now();
+    while(performance.now() - t0 < hang){
+      await drop.animate([{ transform:`translateY(${depth + rand(-12, 12)}px)` }], { duration: rand(500, 900), easing:"ease-in-out", fill:"forwards" }).finished;
+    }
+    await drop.animate([{ transform:`translateY(${hide}px)` }], { duration: rand(900, 1500), easing:"cubic-bezier(.5,0,.8,.3)", fill:"forwards" }).finished;
+  };
+}
+// одновременно выползает только один паук, раз в 10–20 секунд
+(async function spiderScheduler(){
+  if(reduce) return;
+  const list = SPIDERS.map(makeSpider); let last = -1;
+  await sleep(5000);
+  for(;;){
+    let i; do { i = Math.floor(Math.random() * list.length); } while(i === last);
+    last = i; await list[i]();
+    await sleep(rand(10000, 20000));
+  }
+})();
+
+
+/* ---------- для разработки: #play — без заставки, #s2 — сразу второй экран ---------- */
+if(location.hash === "#play"){ $("#start").click(); }
+if(location.hash === "#s2"){ document.body.classList.add("playing"); showS2(); }
+
+})();
+</script>
