@@ -32,7 +32,7 @@ html,body{ margin:0; height:100%; background:#05080d; }
   --night:#05080d;
 }
 *,*::before,*::after{ box-sizing:border-box; }
-html,body{ margin:0; height:100%; background:var(--night); overflow:hidden; }
+html,body{ margin:0; height:100%; background:var(--night); overflow:hidden; touch-action:pan-x pan-y; overscroll-behavior:none; }
 body{ font-family:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--text);
   -webkit-font-smoothing:antialiased; touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; }
 img{ display:block; -webkit-user-drag:none; }
@@ -244,11 +244,21 @@ body.portrait #hud2{ width:100vw; height:100vh; display:flex; flex-direction:col
 body.portrait #hud2 .logo2{ position:static; width:min(46vw,210px); }
 body.portrait #hud2 .title2{ position:static; width:min(90vw,500px); margin-top:1.5vh; }
 body.portrait #hud2 .lead2{ position:static; font-size:clamp(15px,4.3vw,21px); line-height:1.38; padding:0 7vw; margin-top:.5vh; }
-body.portrait #ticket{ position:relative; left:auto; top:auto; width:min(94vw,560px); margin-top:2.2vh; }
-body.portrait .arrows{ position:relative; left:auto; top:auto; margin:1.6vh 0 0; width:min(26vw,120px); }
+body.portrait #ticket{ position:relative; left:auto; top:auto; width:min(100vw,620px); margin-top:2.2vh; }
+/* на телефоне текст подарка крупнее: без подписи «Ваш подарок» (она уже есть в тексте над билетом), шире поля, больше шрифт */
+body.portrait .gift{ left:12%; right:12%; top:20%; bottom:20%; }
+body.portrait .gift .g-l, body.portrait .gift .g-d, body.portrait .gift .g-t{ display:none; }
+body.portrait .gift .g-h{ margin:0; font-size:5.8cqw; line-height:.94; }
+/* на телефоне «+ 15 билетов на Чёрную пятницу» выносим под билет и делаем крупнее */
+body.portrait #ticket.open ~ .gift-extra{ display:flex; animation:giftIn .9s cubic-bezier(.2,.8,.2,1) .35s backwards; }
+.gift-extra{ display:none; align-items:center; justify-content:center; gap:10px; margin-top:1.6vh; }
+.gift-extra .gx-p{ font:700 38px/1 "Cormorant Garamond",serif; color:#ffb347; text-shadow:0 0 14px rgba(255,140,30,.7); }
+.gift-extra .gx-n{ font:700 66px/1 "Cormorant Garamond",serif; color:#ffb347; background:linear-gradient(#fff3c4,#f6a93a 55%,#c4581a); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 12px rgba(255,130,30,.65)); }
+.gift-extra .gx-l{ font:800 clamp(16px,4.7vw,22px)/1.15 "Manrope",sans-serif; color:#ffe9c4; text-align:left; text-shadow:0 2px 12px rgba(0,0,0,.85); }
+body.portrait .arrows{ position:relative; left:auto; top:auto; margin:1.6vh 0 0; width:min(11vw,46px); gap:0; }
 body.portrait #ticket.done + .arrows{ display:none; }
 /* на телефоне после появления кнопки стрелки возвращаются — теперь под кнопкой, и показывают на неё */
-body.portrait #s2.open .arrows{ display:flex; order:10; margin-top:1.2vh; opacity:1; visibility:visible; transform:none; transition:opacity .9s ease 1.5s, visibility 0s 1.5s; }
+body.portrait #s2.open .arrows{ display:flex; order:10; margin-top:.8vh; opacity:1; visibility:visible; transform:none; transition:opacity .9s ease 1.5s, visibility 0s 1.5s; }
 body.portrait #hud2 .cta-text{ position:static; width:auto; padding:0 7vw; margin-top:2.4vh; font-size:clamp(14px,4vw,19px); line-height:1.4; }
 body.portrait .cta{ --bw:min(66vw,360px); position:relative; left:auto; top:auto; transform:none; margin-top:2vh; }
 body.portrait .cta:hover{ transform:scale(1.04); }
@@ -341,6 +351,7 @@ body:not(.ready) :not(#pre):not(#pre *){ animation-play-state:paused !important;
       <svg viewBox="0 0 140 64"><path d="M12 54 L70 12 L128 54" /></svg>
       <svg viewBox="0 0 140 64"><path d="M12 54 L70 12 L128 54" /></svg>
     </div>
+    <div class="gift-extra" aria-hidden="false"><span class="gx-p">+</span><span class="gx-n" id="gxNum"></span><span class="gx-l" id="gxLbl"></span></div>
     <p class="cta-text">Подарок пришлёт бот. Там же расскажет, зачем билеты и где они пригодятся.</p>
     <a class="cta" id="cta" href="#" target="_blank" rel="noopener">
       <span class="wing-w"><img src="assets/wing.webp" alt=""></span>
@@ -398,6 +409,17 @@ addEventListener("error", e => {
 }, true);
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = s => document.querySelector(s);
+// на телефоне запрещаем масштабирование щипком: иначе страницу можно сжать, и вёрстка «уезжает»
+(function lockZoom(){
+  let vm = document.querySelector('meta[name="viewport"]');
+  if(!vm){ vm = document.createElement("meta"); vm.name = "viewport"; document.head.appendChild(vm); }
+  vm.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover");
+  const stop = e => e.preventDefault();
+  ["gesturestart", "gesturechange", "gestureend"].forEach(t => document.addEventListener(t, stop, { passive:false }));
+  document.addEventListener("touchmove", e => { if(e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive:false });
+  let lastTap = 0;
+  document.addEventListener("touchend", e => { const n = Date.now(); if(n - lastTap < 300) e.preventDefault(); lastTap = n; }, { passive:false });
+})();
 $(".logo").innerHTML = $("#pre .pre-logo").innerHTML;   // логотип лежит в разметке один раз — в прелоадере
 const world = $("#world"), hud = $("#hud"), fx = $("#fx"), hint = $("#hint");
 const world2 = $("#world2"), hud2 = $("#hud2");
@@ -749,8 +771,9 @@ async function finish(){
 /* ---------- экран 2 ---------- */
 $("#logo2").innerHTML = $(".logo").innerHTML;
 $("#giftTitle").textContent = GIFT_TITLE;
-$("#tixNum").textContent = TICKETS;
+$("#tixNum").textContent = TICKETS; $("#gxNum").textContent = TICKETS;
 $("#tixLabel").innerHTML = plural(TICKETS,"билет","билета","билетов") + " на<br>Чёрную пятницу";
+$("#gxLbl").innerHTML = plural(TICKETS,"билет","билета","билетов") + " на<br>Чёрную пятницу";
 $("#cta").href = BOT_URL;
 
 const ticket = $("#ticket"), tkCard = $("#tkCard"), scratchCv = $("#scratch");
