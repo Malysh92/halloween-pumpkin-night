@@ -242,7 +242,7 @@ body.portrait #hud .counter{ position:static; margin-top:1.6vh; gap:2px; }
 body.portrait #hud .counter::before{ display:none; }
 body.portrait .slot{ width:min(17vw,78px); height:min(16vw,74px); }
 body.portrait .slot .empty{ width:70%; } body.portrait .slot .full{ width:92%; }
-body.portrait #hud .hint{ position:absolute; top:auto; bottom:max(18px, env(safe-area-inset-bottom)); font-size:15px; padding:0 6vw; }
+body.portrait #hud .hint{ position:absolute; top:auto; bottom:calc(env(safe-area-inset-bottom, 0px) + 104px); font-size:16px; padding:0 6vw; text-shadow:0 2px 14px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.8); }
 body.portrait .start{ --bw:min(66vw,360px); left:50%; }
 @media (prefers-reduced-motion: reduce){ .sp,.bat{ display:none; } *{ animation-duration:.01ms !important; } }
 body:not(.ready) :not(#pre):not(#pre *){ animation-play-state:paused !important; }
