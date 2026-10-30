@@ -31,12 +31,16 @@ if len(sys.argv)>1:
     for n in sorted(names):
         if n in HIGHRES and n in tilda: ch=[J+n,P+n,tilda[n]]      # полноразмерные фоны для компьютера: сначала jsDelivr, сжатая копия Тильды — на крайний случай
         else: ch=([tilda[n]] if n in tilda else [])+[J+n,P+n]
-        chains.append(ch); primary[n]=ch[0]
+        if not (n in tilda and n not in HIGHRES): chains.append(ch)
+        primary[n]=ch[0]
     out=out.replace('const ASSET_PRIMARY = {};','const ASSET_PRIMARY = %s;'%json.dumps(primary,ensure_ascii=False,separators=(',',':')))
     out=out.replace('const ASSET_CHAINS = [];','const ASSET_CHAINS = %s;'%json.dumps(chains,ensure_ascii=False,separators=(',',':')))
     # все оставшиеся относительные ссылки assets/... -> основной адрес
     def sub(m):
         n=m.group(1); return primary.get(n, J+n)
     out=re.sub(r'(?<![/\w.-])assets/([\w./-]+?\.(?:webp|svg|mp3|woff2))', sub, out)
+    out=re.sub(r'/\*(?!ASSET).*?\*/','',out,flags=re.S)                 # блочные комментарии
+    out=re.sub(r'(?m)^[ \t]+','',out); out=re.sub(r'(?m)[ \t]+$','',out)  # отступы
+    out=re.sub(r'\n{2,}','\n',out)
     open('repo/tilda.html','w',encoding='utf-8').write(out)
     print('tilda.html', len(out),'байт; относительных ссылок осталось:', len(re.findall(r'(?<![/\w.-])assets/',out)))
