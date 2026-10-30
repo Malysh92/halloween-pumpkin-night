@@ -355,9 +355,14 @@ const BOT_URL = "https://t.me/YOUR_BOT?start=halloween";   // ссылка на 
 const GIFT_TITLE = "До ужаса полезный аудио-разбор: что происходит сейчас на российском рынке";
 const TICKETS = 15;             // сколько билетов на Чёрную пятницу
 const MISS_PENALTY = false;     // true — промах отнимает одну пойманную тыкву
-const STAY_START = 1050;        // сколько мс тыква сидит в окне в начале...
-const STAY_MIN = 480;           // ...и в конце игры
-const STAY_STEP = 130;          // на сколько мс быстрее после каждой пойманной
+const STAY_START = 1500;        // сколько мс тыква сидит в окне в начале...
+const STAY_MIN = 850;           // ...и в конце игры
+const STAY_STEP = 110;          // на сколько мс быстрее после каждой пойманной
+const SPAWN_START = 1350;       // пауза между появлениями тыкв в начале...
+const SPAWN_MIN = 850;          // ...и в конце
+const SPAWN_STEP = 100;         // на сколько мс чаще после каждой пойманной
+const DOUBLE_CHANCE = .25;      // шанс, что выглянут сразу две тыквы (со 4-й тыквы)
+const HOP_CHANCE = .25;         // шанс, что тыква перепрыгнет в другое окно (со 3-й тыквы)
 /* ===================== */
 
 const W = 2000, H = 1125;
@@ -462,19 +467,19 @@ function place(w, stay, canHop){
       hide(w, true);
       place(free[Math.floor(Math.random() * free.length)], stay * .7, false);
     } else hide(w, true);
-  }, canHop ? stay * .45 : stay);
+  }, canHop ? stay * .6 : stay);
 }
 function spawn(){
   if(state !== "playing") return;
   const stay = reduce ? 2200 : Math.max(STAY_MIN, STAY_START - caught * STAY_STEP);
   // с третьей тыквы иногда выглядывают сразу две
-  const n = (caught >= 2 && Math.random() < .5) ? 2 : 1;
+  const n = (caught >= 3 && Math.random() < DOUBLE_CHANCE) ? 2 : 1;
   for(let k = 0; k < n && activeCount() < 2; k++){
     const free = wins.filter(w => !w.has);
     if(!free.length) break;
-    place(free[Math.floor(Math.random() * free.length)], stay, !reduce && caught >= 1 && Math.random() < .5);
+    place(free[Math.floor(Math.random() * free.length)], stay, !reduce && caught >= 2 && Math.random() < HOP_CHANCE);
   }
-  loopSpawn = setTimeout(spawn, reduce ? 2400 : Math.max(480, 900 - caught * 110));
+  loopSpawn = setTimeout(spawn, reduce ? 2400 : Math.max(SPAWN_MIN, SPAWN_START - caught * SPAWN_STEP));
 }
 function hide(w, maybeOff){
   clearTimeout(w.timer); w.has = false; w.el.classList.remove("has");
