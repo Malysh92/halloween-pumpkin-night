@@ -240,6 +240,8 @@ body.portrait #hud2 .lead2{ position:static; font-size:clamp(15px,4.3vw,21px); l
 body.portrait #ticket{ position:relative; left:auto; top:auto; width:min(94vw,560px); margin-top:2.2vh; }
 body.portrait .arrows{ position:relative; left:auto; top:auto; margin:1.6vh 0 0; width:min(26vw,120px); }
 body.portrait #ticket.done + .arrows{ display:none; }
+/* на телефоне после появления кнопки стрелки возвращаются — теперь под кнопкой, и показывают на неё */
+body.portrait #s2.open .arrows{ display:flex; order:10; margin-top:1.2vh; opacity:1; visibility:visible; transform:none; transition:opacity .9s ease 1.5s, visibility 0s 1.5s; }
 body.portrait #hud2 .cta-text{ position:static; width:auto; padding:0 7vw; margin-top:2.4vh; font-size:clamp(14px,4vw,19px); line-height:1.4; }
 body.portrait .cta{ --bw:min(66vw,360px); position:relative; left:auto; top:auto; transform:none; margin-top:2vh; }
 body.portrait .cta:hover{ transform:scale(1.04); }
