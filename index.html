@@ -374,18 +374,18 @@ body:not(.ready) :not(#pre):not(#pre *){ animation-play-state:paused !important;
 /* ===== НАСТРОЙКИ ===== */
 const GOAL = 5;                 // сколько тыкв поймать
 const MUSIC_VOLUME = .5;        // громкость музыки (0..1)
-const BOT_URL = "https://t.me/YOUR_BOT?start=halloween";   // ссылка на бота (одна для всех)
+const BOT_URL = "https://investmafk.ru/thanks_halloween";   // ссылка на бота (одна для всех)
 const GIFT_TITLE = "До ужаса полезный аудио-разбор: что происходит сейчас на российском рынке";
 const TICKETS = 15;             // сколько билетов на Чёрную пятницу
 const MISS_PENALTY = false;     // true — промах отнимает одну пойманную тыкву
-const STAY_START = 1500;        // сколько мс тыква сидит в окне в начале...
-const STAY_MIN = 850;           // ...и в конце игры
-const STAY_STEP = 110;          // на сколько мс быстрее после каждой пойманной
-const SPAWN_START = 1350;       // пауза между появлениями тыкв в начале...
-const SPAWN_MIN = 850;          // ...и в конце
+const STAY_START = 1250;        // сколько мс тыква сидит в окне в начале...
+const STAY_MIN = 650;           // ...и в конце игры
+const STAY_STEP = 120;          // на сколько мс быстрее после каждой пойманной
+const SPAWN_START = 1100;       // пауза между появлениями тыкв в начале...
+const SPAWN_MIN = 650;          // ...и в конце
 const SPAWN_STEP = 100;         // на сколько мс чаще после каждой пойманной
-const DOUBLE_CHANCE = .25;      // шанс, что выглянут сразу две тыквы (со 4-й тыквы)
-const HOP_CHANCE = .25;         // шанс, что тыква перепрыгнет в другое окно (со 3-й тыквы)
+const DOUBLE_CHANCE = .4;      // шанс, что выглянут сразу две тыквы (со 4-й тыквы)
+const HOP_CHANCE = .4;         // шанс, что тыква перепрыгнет в другое окно (со 3-й тыквы)
 /* ===================== */
 
 const MOBILE = innerWidth / innerHeight < 0.9;      // телефон в вертикали: другой фон (замок с 6 окнами)
@@ -571,7 +571,7 @@ function place(w, stay, canHop){
       hide(w, true);
       place(free[Math.floor(Math.random() * free.length)], stay * .7, false);
     } else hide(w, true);
-  }, canHop ? stay * .6 : stay);
+  }, canHop ? stay * .5 : stay);
 }
 function spawn(){
   if(state !== "playing") return;
