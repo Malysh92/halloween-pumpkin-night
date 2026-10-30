@@ -3,7 +3,7 @@
 :root{ --logo:#cfd2dc; }
 html,body{ margin:0; height:100%; background:#05080d; }
 /* ---------- прелоадер ---------- */
-#pre{ position:fixed; inset:0; z-index:100; background:#05080d; display:grid; place-items:center; transition:opacity .7s ease, visibility 0s .7s; animation:preFail 0s linear 14s forwards; }
+#pre{ position:fixed; inset:0; z-index:100; background:#05080d; display:grid; place-items:center; transition:opacity .7s ease, visibility 0s .7s; animation:preFail 0s linear 75s forwards; }
 #pre.hide{ opacity:0; visibility:hidden; pointer-events:none; }
 @keyframes preFail{ to{ opacity:0; visibility:hidden; pointer-events:none; } }
 #pre .pre-in{ display:flex; flex-direction:column; align-items:center; gap:22px; }
@@ -406,16 +406,35 @@ addEventListener("resize", layout); layout();
 const CRITICAL = ["bg1.webp","title.webp","btn.webp","wing.webp","pumpkin.webp","window_lit.webp","counter_full.webp","counter_empty.svg","spider.webp"].map(f => "https://malysh92.github.io/halloween-pumpkin-night/assets/" + f);
 const SCREEN2_ASSETS = ["bg2.webp","ticket_cover.webp","ticket_open.webp","title2.webp","cta.webp"].map(f => "https://malysh92.github.io/halloween-pumpkin-night/assets/" + f);
 const keepAlive = [];
-function loadImg(src){
+function loadImg(src, tries = 3){
   return new Promise(res => {
-    const i = new Image(); i.onload = () => { (i.decode ? i.decode() : Promise.resolve()).catch(() => {}).then(() => res(i)); }; i.onerror = () => res(i); i.src = src;
+    let n = 0;
+    (function go(){
+      const i = new Image();
+      i.onload = () => { (i.decode ? i.decode() : Promise.resolve()).catch(() => {}).then(() => res(i)); };
+      i.onerror = () => { if(++n < tries) setTimeout(go, 500 * n); else res(i); };   // не сдаёмся с первой ошибки сети
+      i.src = src + (n ? (src.includes("?") ? "&" : "?") + "r=" + n : "");
+    })();
+  });
+}
+// картинки, которые лежат прямо в разметке первого экрана: ждём, пока они реально загрузятся и расшифруются
+function domImgReady(img, tries = 3){
+  return new Promise(res => {
+    let n = 0; const orig = img.getAttribute("src");
+    const done = () => { (img.decode ? img.decode() : Promise.resolve()).catch(() => {}).then(res); };
+    const fail = () => { if(++n < tries){ setTimeout(() => { img.src = orig + (orig.includes("?") ? "&" : "?") + "r=" + n; }, 500 * n); } else res(); };
+    img.addEventListener("load", done); img.addEventListener("error", fail);
+    if(img.complete && img.naturalWidth) done(); else if(img.complete) fail();
   });
 }
 (async function preload(){
-  const t0 = performance.now(), bar = $("#preBar"), total = CRITICAL.length + 1; let done = 0;
+  const t0 = performance.now(), bar = $("#preBar");
+  const domImgs = [...document.querySelectorAll("#world img, #hud img, #wins img")];
+  const total = CRITICAL.length + domImgs.length + 1; let done = 0;
   const bump = () => { bar.style.transform = `scaleX(${Math.min(1, ++done / total)})`; };
-  const fonts = Promise.race([document.fonts ? Promise.all([document.fonts.load('500 20px Manrope','Аа'), document.fonts.load('800 20px Manrope','Аа'), document.fonts.load('700 20px "Cormorant Garamond"','Аа1')]) : 0, sleep(2500)]).then(bump);
-  await Promise.race([Promise.all([fonts, ...CRITICAL.map(u => loadImg(u).then(bump))]), sleep(10000)]);
+  const fonts = Promise.race([document.fonts ? Promise.all([document.fonts.load('500 20px Manrope','Аа'), document.fonts.load('800 20px Manrope','Аа'), document.fonts.load('700 20px "Cormorant Garamond"','Аа1')]) : 0, sleep(4000)]).catch(() => {}).then(bump);
+  // ждём ВСЁ нужное для первого экрана; страховочный потолок — 60 секунд (на совсем плохой сети)
+  await Promise.race([Promise.all([fonts, ...CRITICAL.map(u => loadImg(u).then(bump)), ...domImgs.map(im => domImgReady(im).then(bump))]), sleep(60000)]);
   await sleep(Math.max(0, 650 - (performance.now() - t0)));        // не мигаем, если всё в кэше
   document.body.classList.add("ready"); $("#pre").classList.add("hide"); setTimeout(() => $("#pre").remove(), 900);
   // пока человек играет, тихо подгружаем второй экран
