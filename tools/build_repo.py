@@ -26,9 +26,11 @@ if len(sys.argv)>1:
     for root,_,files in os.walk('site/assets'):
         for f in files:
             if f.endswith(('.webp','.svg','.mp3','.woff2')): names.append(os.path.relpath(os.path.join(root,f),'site/assets'))
+    HIGHRES={'bg1.webp','bg2.webp'}
     chains=[]; primary={}
     for n in sorted(names):
-        ch=([tilda[n]] if n in tilda else [])+[J+n,P+n]
+        if n in HIGHRES and n in tilda: ch=[J+n,P+n,tilda[n]]      # полноразмерные фоны для компьютера: сначала jsDelivr, сжатая копия Тильды — на крайний случай
+        else: ch=([tilda[n]] if n in tilda else [])+[J+n,P+n]
         chains.append(ch); primary[n]=ch[0]
     out=out.replace('const ASSET_PRIMARY = {};','const ASSET_PRIMARY = %s;'%json.dumps(primary,ensure_ascii=False,separators=(',',':')))
     out=out.replace('const ASSET_CHAINS = [];','const ASSET_CHAINS = %s;'%json.dumps(chains,ensure_ascii=False,separators=(',',':')))
