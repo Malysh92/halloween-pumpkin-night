@@ -403,9 +403,11 @@ function layout(){
   // экран 1
   let s1, tx1, ty1;
   if(MOBILE){
-    s1 = Math.max(vw / W1, vh / H1) * 1.3;           // чуть приближаем, чтобы окна были крупнее
+    s1 = Math.max(vw / W1, vh / H1) * 1.42;          // приближаем, чтобы замок и окна были крупнее
     tx1 = (vw - W1 * s1) / 2;
-    ty1 = Math.min(0, Math.max(vh - H1 * s1, vh * .66 - 1120 * s1));   // блок окон ближе к низу, под текстом
+    const cb = $("#counter").getBoundingClientRect().bottom;          // низ счётчика: крыша не должна на него наезжать
+    const wanted = vh * .6 - 1120 * s1, roofLimit = cb + 16 - 765 * s1;
+    ty1 = Math.min(0, Math.max(vh - H1 * s1, wanted, roofLimit));
   } else if(!PORTRAIT){ s1 = Math.max(vw / W1, vh / H1); tx1 = (vw - W1 * s1) / 2; ty1 = (vh - H1 * s1) / 2; }
   else { s1 = vw / 1240; tx1 = (vw - W1 * s1) / 2; ty1 = vh - H1 * s1; }
   world.style.transform = `translate(${tx1}px,${ty1}px) scale(${s1})`;
@@ -471,7 +473,7 @@ function domImgReady(img, tries = 3){
   // ждём ВСЁ нужное для первого экрана; страховочный потолок — 60 секунд (на совсем плохой сети)
   await Promise.race([Promise.all([fonts, ...CRITICAL.map(u => loadImg(u).then(bump)), ...domImgs.map(im => domImgReady(im).then(bump))]), sleep(60000)]);
   await sleep(Math.max(0, 650 - (performance.now() - t0)));        // не мигаем, если всё в кэше
-  document.body.classList.add("ready"); $("#pre").classList.add("hide"); setTimeout(() => $("#pre").remove(), 900);
+  document.body.classList.add("ready"); layout(); $("#pre").classList.add("hide"); setTimeout(() => $("#pre").remove(), 900);
   // пока человек играет, тихо подгружаем второй экран
   setTimeout(() => SCREEN2_ASSETS.forEach(u => loadImg(u).then(i => keepAlive.push(i))), 1500);
 })();
