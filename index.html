@@ -236,6 +236,7 @@ body.playing #hud .title img{ animation:none; filter:drop-shadow(0 6px 22px rgba
 
 /* вертикальный экран */
 body.mob #world, body.mob #world2{ -webkit-mask-image:none !important; mask-image:none !important; }
+body.mob #world2, body.mob .vig, body.mob #amb, body.mob #amb2{ display:none !important; }
 /* телефон: лёгкое затемнение всей сцены второго экрана, чтобы текст сверху читался */
 body.mob #world2 .shade{ left:0; top:0; width:100%; height:100%; border-radius:0; filter:none;
   background:linear-gradient(to bottom, rgba(3,6,10,.72) 0%, rgba(3,6,10,.56) 28%, rgba(3,6,10,.46) 46%, rgba(3,6,10,.7) 60%, rgba(3,6,10,.8) 76%, rgba(3,6,10,.84) 100%); }
@@ -413,7 +414,7 @@ const MOBILE = innerWidth / innerHeight < 0.9;      // телефон в вер�
 const IS_ANDROID = /Android/i.test(navigator.userAgent);
 // «лёгкий режим» для Android и слабых телефонов: без тяжёлых эффектов и с уменьшенными картинками. ?lite — включить, ?full — выключить
 const LITE = /[?&#]lite\b/.test(location.href) ? true : /[?&#]full\b/.test(location.href) ? false
-           : IS_ANDROID || (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+           : MOBILE || IS_ANDROID || (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
 if(LITE) document.body.classList.add("lite");
 const W = 2000, H = 1125;                            // мир экрана 2 (и экрана 1 на компьютере)
 const W1 = MOBILE ? 1125 : 2000, H1 = MOBILE ? 2000 : 1125;   // мир экрана 1
@@ -455,7 +456,9 @@ const pick = n => LITEMAP[n] && (LITE || (MOBILE && PHONE_SMALL.indexOf(n) >= 0)
 const SMALL_CANVAS = LITE || MOBILE;   // холст стирания на телефоне поменьше
 $("#bg1").src = asset(pick(MOBILE ? "bg1m.webp" : "bg1.webp"));
 $(".tk-open").src = asset(pick("ticket_open.webp"));
-$("#bg2").src = asset(pick(MOBILE ? "bg2m.webp" : "bg2.webp"));   // тяжёлый, но браузер начнёт грузить его в фоне
+if(MOBILE){   // телефон: просто фон на весь экран (затемнение уже запечено в картинку)
+  const sec = $("#s2"); sec.style.backgroundImage = "url(\"" + asset(pick("bg2m.webp")) + "\")"; sec.style.backgroundSize = "cover"; sec.style.backgroundPosition = "center";
+} else $("#bg2").src = asset(pick("bg2.webp"));   // тяжёлый, но браузер начнёт грузить его в фоне
 world2.style.width = W2 + "px"; world2.style.height = H2 + "px";
 world.style.width = W1 + "px"; world.style.height = H1 + "px";
 if(MOBILE) document.body.classList.add("mob");
@@ -916,6 +919,7 @@ function reveal(){
 /* ---------- живой фон: глаза, дымка, угольки, фонари ---------- */
 let eyesVisible = 0; const EYES_MAX = LITE ? 2 : 5;
 function buildAmbience(amb, cfg){
+  if(LITE) return;     // на телефонах и Android никаких угольков, тумана, фонарей, глаз и пауков
   if(!LITE) cfg.lamps.forEach(([x,y,k],i) => { const l = document.createElement("div"); l.className = "lamp"; l.style.left = x+"px"; l.style.top = y+"px"; l.style.transform = `scale(${k||1})`; l.style.animationDelay = (-i*1.3)+"s"; amb.appendChild(l); });
   if(!reduce && !LITE) for(let i = 0; i < 5; i++){   // дымка у земли
     const f = document.createElement("div"); f.className = "fogb";
@@ -1032,7 +1036,7 @@ function makeSpider(cfg){
 }
 // одновременно выползает только один паук, раз в 10–20 секунд
 (async function spiderScheduler(){
-  if(reduce) return;
+  if(reduce || LITE) return;
   const list = SPIDERS.map(makeSpider); let last = -1;
   await sleep(5000);
   for(;;){
